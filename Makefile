@@ -19,7 +19,7 @@ DEPS := \
 C_SRCS := $(SOURCES)
 OBJS := $(OBJECTS)
 C_DEPS := $(DEPS) 
-LIBS := -lDriversLPC17xxgnu -lcr_dsplibFFT_cm3 -lgcc -lc
+LIBS := -lDriversLPC17xxgnu -lcr_dsplibFFT_cm3 -lm -lgcc -lc
 
 src/wrap/%.o: src/wrap/%.c
 src/usb/%.o: src/usb/%.c

@@ -45,8 +45,9 @@
 #include "lpc17xx_can.h"
 #include "lpc17xx_pwm.h"
 #include "lpc17xx_i2c.h"
+#include "lpc17xx_systick.h"
 #include "cr_dsplib.h"
-
+#include "aeroangle.h"
 
 
 /*****************************************************************************
@@ -156,45 +157,53 @@ int aeroInit(uint8_t * args)
 
 int aeroLoop(uint8_t * args)
 {
-    uint8_t * arg_ptr;
-    I2C_M_SETUP_Type* accelerometer;
-    I2C_M_SETUP_Type* gyro;
+  uint8_t * arg_ptr;
+  I2C_M_SETUP_Type* accelerometer;
+  I2C_M_SETUP_Type* gyro;
+  
+  if ((arg_ptr = (uint8_t *) strtok(NULL, " ")) == NULL) return 1;
+  accelerometer = (I2C_M_SETUP_Type*) strtoul((char *) arg_ptr, NULL, 16);
+  if ((arg_ptr = (uint8_t *) strtok(NULL, " ")) == NULL) return 1;
+  gyro = (I2C_M_SETUP_Type*) strtoul((char *) arg_ptr, NULL, 16);
+  
+  uint8_t accel_x_low = 0x28;
+  uint8_t gyro_x_low = 0x28;
+  uint8_t* accel_data=malloc(6*sizeof(uint8_t));
+  uint8_t* gyro_data=malloc(6*sizeof(uint8_t));
+  float accel_x, accel_y, accel_z;
+  float accel_OneG=9.8;
+  float gyro_x, gyro_y, gyro_z;
+  int i;
+  FLIGHT_ANGLE_TYPE* flight_angle = flightAngleInitialize(1.0, 0.0);
     
-    if ((arg_ptr = (uint8_t *) strtok(NULL, " ")) == NULL) return 1;
-    accelerometer = (I2C_M_SETUP_Type*) strtoul((char *) arg_ptr, NULL, 16);
-    if ((arg_ptr = (uint8_t *) strtok(NULL, " ")) == NULL) return 1;
-    gyro = (I2C_M_SETUP_Type*) strtoul((char *) arg_ptr, NULL, 16);
+  while (1)
+  {
+    for (i=0; i<72000; i++);
     
-    uint8_t accel_x_low = 0x28;
-    uint8_t gyro_x_low = 0x28;
-    uint8_t* accel_data=malloc(6*sizeof(uint8_t));
-    uint8_t* gyro_data=malloc(6*sizeof(uint8_t));
-    int accel_x, accel_y, accel_z;
-    int gyro_x, gyro_y, gyro_z;
-    int i;
+    accel_data=read6Reg(accelerometer,accel_x_low,accel_data);
+    gyro_data=read6Reg(gyro,gyro_x_low,gyro_data);
     
-    while (1)
-    {
-        //for (i = 0; i < 800000; i++);
-        
-        accel_data=read6Reg(accelerometer,accel_x_low,accel_data);
-        gyro_data=read6Reg(gyro,gyro_x_low,gyro_data);
-        
-        accel_x=twosComplement(accel_data[0], accel_data[1]);
-        accel_y=twosComplement(accel_data[2], accel_data[3]);
-        accel_z=twosComplement(accel_data[4], accel_data[5]);
-        
-        gyro_x=twosComplement(gyro_data[0], gyro_data[1]);
-        gyro_y=twosComplement(gyro_data[2], gyro_data[3]);
-        gyro_z=twosComplement(gyro_data[4], gyro_data[5]);
-        
-        sprintf((char *) str, "accel=[%d,%d,%d]\r\n", accel_x, accel_y, accel_z);
-        writeUSBOutString(str);
-        
-        sprintf((char *) str, "gyro=[%d,%d,%d]\r\n", gyro_x, gyro_y, gyro_z);
-        writeUSBOutString(str);
-        
-    }
+    accel_x=twosComplement(accel_data[0], accel_data[1])/835.9;
+    accel_y=twosComplement(accel_data[2], accel_data[3])/835.9;
+    accel_z=twosComplement(accel_data[4], accel_data[5])/835.9;
+    
+    gyro_x=twosComplement(gyro_data[0], gyro_data[1])/3754.9;//131.072;
+    gyro_y=twosComplement(gyro_data[2], gyro_data[3])/3754.9;//131.072;
+    gyro_z=twosComplement(gyro_data[4], gyro_data[5])/3754.9;//131.072;
+    
+    flightAngleCalculate(flight_angle, gyro_x, gyro_y, gyro_z, accel_x, accel_y, accel_z, accel_OneG, 1, 0);
+    //flightAngleCalculate(flight_angle, 0, 0, 0, 0, 0, 0, accel_OneG, 1, 0);
+    //sprintf((char *) str, "angle=[%f,%f,%f]\r\n", getAngle(flight_angle, ROLL), getAngle(flight_angle, PITCH), getAngle(flight_angle, YAW));
+    //writeUSBOutString(str);
+    
+    sprintf((char *) str, "accel=[%i,%i,%i]\r\n", (int)(accel_x*1000), (int)(accel_y*1000), (int)(accel_z*1000));
+    writeUSBOutString(str);
+    
+    sprintf((char *) str, "gyro=[%i,%i,%i]\r\n", (int)(gyro_x*1000), (int)(gyro_y*1000), (int)(gyro_z*1000));
+    writeUSBOutString(str);
+    
+    printstuff(flight_angle);
+  }
 
-    return 0;
+  return 0;
 }
