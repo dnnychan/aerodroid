@@ -189,7 +189,6 @@ void aeroPIDValuesInit(tS_pid_Coeff* PID[10])
   PID[HEADING]->Kd = 00;
   PID[HEADING]->IntegratedError = 0;
   PID[HEADING]->LastError = 0;
-  // AKA PID experiements
   PID[LEVELGYROROLL]->Kp = 10000;
   PID[LEVELGYROROLL]->Ki = 00;
   PID[LEVELGYROROLL]->Kd = -30000;
@@ -215,11 +214,11 @@ int aeroLoop(uint8_t * args)
   
   uint8_t accel_x_low = 0x28;
   uint8_t gyro_x_low = 0x28;
-  uint8_t* accel_data=malloc(6*sizeof(uint8_t));
-  uint8_t* gyro_data=malloc(6*sizeof(uint8_t));
-  float accel_x, accel_y, accel_z;
+  uint8_t* accel_raw=malloc(6*sizeof(uint8_t));
+  uint8_t* gyro_raw=malloc(6*sizeof(uint8_t));
+  
+  VECTOR accel_data, gyro_data;
   float accel_OneG=9.8;
-  float gyro_x, gyro_y, gyro_z;
   int i;
   FLIGHT_ANGLE_TYPE* flight_angle = flightAngleInitialize(1.0, 0.0);
   MOTORS_TYPE* motors = motorsInit();
@@ -234,28 +233,28 @@ int aeroLoop(uint8_t * args)
   {
     for (i=0; i<72000; i++);
     
-    accel_data=read6Reg(accelerometer,accel_x_low,accel_data);
-    gyro_data=read6Reg(gyro,gyro_x_low,gyro_data);
+    accel_raw=read6Reg(accelerometer,accel_x_low,accel_raw);
+    gyro_raw=read6Reg(gyro,gyro_x_low,gyro_raw);
     
-    accel_x=twosComplement(accel_data[0], accel_data[1])/835.9;
-    accel_y=twosComplement(accel_data[2], accel_data[3])/835.9;
-    accel_z=twosComplement(accel_data[4], accel_data[5])/835.9;
+    accel_data.x=twosComplement(accel_raw[0], accel_raw[1])/835.9;
+    accel_data.y=twosComplement(accel_raw[2], accel_raw[3])/835.9;
+    accel_data.z=twosComplement(accel_raw[4], accel_raw[5])/835.9;
     
-    gyro_x=twosComplement(gyro_data[0], gyro_data[1])/3754.9;//131.072;
-    gyro_y=twosComplement(gyro_data[2], gyro_data[3])/3754.9;//131.072;
-    gyro_z=twosComplement(gyro_data[4], gyro_data[5])/3754.9;//131.072;
+    gyro_data.x=twosComplement(gyro_raw[0], gyro_raw[1])/3754.9;//131.072;
+    gyro_data.y=twosComplement(gyro_raw[2], gyro_raw[3])/3754.9;//131.072;
+    gyro_data.z=twosComplement(gyro_raw[4], gyro_raw[5])/3754.9;//131.072;
     
-    flightAngleCalculate(flight_angle, gyro_x, gyro_y, gyro_z, accel_x, accel_y, accel_z, accel_OneG, 1, 0);
+    flightAngleCalculate(flight_angle, gyro_data.x, gyro_data.y, gyro_data.z, accel_data.x, accel_data.y, accel_data.z, accel_OneG, 1, 0);
     
-    sprintf((char *) str, "accel=[%i,%i,%i]\r\n", (int)(accel_x*1000), (int)(accel_y*1000), (int)(accel_z*1000));
-    writeUSBOutString(str);
+    //sprintf((char *) str, "accel=[%i,%i,%i]\r\n", (int)(accel_data.x*1000), (int)(accel_data.y*1000), (int)(accel_data.z*1000));
+    //writeUSBOutString(str);
     
-    sprintf((char *) str, "gyro=[%i,%i,%i]\r\n", (int)(gyro_x*1000), (int)(gyro_y*1000), (int)(gyro_z*1000));
+    sprintf((char *) str, "gyro=[%i,%i,%i]\r\n", (int)(gyro_data.x*1000), (int)(gyro_data.y*1000), (int)(gyro_data.z*1000));
     writeUSBOutString(str);
     
     printstuff(flight_angle);
     
-    processFlightControl(motors, flight_angle, PID);
+    processFlightControl(motors, flight_angle, PID, gyro_data);
   }
 
   return 0;

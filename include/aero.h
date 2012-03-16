@@ -59,4 +59,8 @@
 #define MAXCOMMAND 2000
 #define LASTMOTOR 4
 
+typedef struct {
+  float x, y, z;
+} VECTOR;
+
 #endif

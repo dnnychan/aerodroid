@@ -107,8 +107,8 @@ float getAngle(FLIGHT_ANGLE_TYPE* flight_angle, uint8_t axis)
 
 void printstuff(FLIGHT_ANGLE_TYPE* flight_angle)
 {
-  sprintf((char *) str, "dcm=[%i,%i,%i\r\n  %i,%i,%i\r\n  %i,%i,%i]\r\n", (int)(flight_angle->dcm_matrix[0]*1000), (int)(flight_angle->dcm_matrix[1]*1000), (int)(flight_angle->dcm_matrix[2]*1000), (int)(flight_angle->dcm_matrix[3]*1000), (int)(flight_angle->dcm_matrix[4]*1000), (int)(flight_angle->dcm_matrix[5]*1000), (int)(flight_angle->dcm_matrix[6]*1000), (int)(flight_angle->dcm_matrix[7]*1000), (int)(flight_angle->dcm_matrix[8]*1000));
-  writeUSBOutString(str);
+  //sprintf((char *) str, "dcm=[%i,%i,%i\r\n  %i,%i,%i\r\n  %i,%i,%i]\r\n", (int)(flight_angle->dcm_matrix[0]*1000), (int)(flight_angle->dcm_matrix[1]*1000), (int)(flight_angle->dcm_matrix[2]*1000), (int)(flight_angle->dcm_matrix[3]*1000), (int)(flight_angle->dcm_matrix[4]*1000), (int)(flight_angle->dcm_matrix[5]*1000), (int)(flight_angle->dcm_matrix[6]*1000), (int)(flight_angle->dcm_matrix[7]*1000), (int)(flight_angle->dcm_matrix[8]*1000));
+  //writeUSBOutString(str);
   sprintf((char *) str, "angles=[%i, %i, %i]\r\n",(int)(flight_angle->angle[ROLL]*180/3.14159), (int)(flight_angle->angle[PITCH]*180/3.14159), (int)(flight_angle->angle[YAW]*180/3.14159));
   writeUSBOutString(str);
 }
