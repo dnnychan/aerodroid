@@ -32,36 +32,36 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  ******************************************************************************/
  
-#ifndef AEROANGLE_H_
-#define AEROANGLE_H_
+#ifndef AEROFLIGHT_H_
+#define AEROFLIGHT_H_
 
 #include "LPC17xx.h"
 #include "lpc_types.h"
+#include "lpc17xx_pwm.h"
+
+#include "table.h"
+#include "return.h"
+#include "cr_dsplib.h"
+
+#include "aeroangle.h"
 #include "aero.h"
 
+//Motor related commands
 typedef struct {
-  float angle[3];
-  float gyro_angle[2];
-  float corrected_rate_vector[3];
-  float earth_accel[3];
-  float dcm_matrix[9];
-  float omegaP[3];
-  float omegaI[3];
-  float omega[3];
-  float error_course;
-  float kp_roll_pitch;
-  float ki_roll_pitch;
-  float kp_yaw;
-  float ki_yaw;
-  float delta_t
-} FLIGHT_ANGLE_TYPE;
+  int axis_command[3];
+  int motor_command[LASTMOTOR];
+  int min_command[LASTMOTOR];
+  int max_command[LASTMOTOR];
+} MOTORS_TYPE;
 
-FLIGHT_ANGLE_TYPE* flightAngleInitialize(float hdgX, float hdgY);
-float getAngle(FLIGHT_ANGLE_TYPE* flight_angle, uint8_t axis);
-void printstuff(FLIGHT_ANGLE_TYPE* flight_angle);
-void flightAngleCalculate(FLIGHT_ANGLE_TYPE* flight_angle, \
-    float rollRate,           float pitchRate,     float yawRate, \
-    float longitudinalAccel,  float lateralAccel,  float verticalAccel, \
-    float oneG,               float magX,          float magY);
+MOTORS_TYPE* motorsInit(void);
+void setMotorAxisCommand(MOTORS_TYPE*motors, int motor, int value);
+const int getMotorAxisCommand(MOTORS_TYPE*motors, int motor);
+void setMotorCommand(MOTORS_TYPE*motors, int motor, int value);
+const int getMotorCommand(MOTORS_TYPE*motors, int motor);
+void writeMotors(MOTORS_TYPE* motors);
+
+//Flight commands
+void processFlightControl(MOTORS_TYPE* motors, FLIGHT_ANGLE_TYPE* flight_angle, tS_pid_Coeff* PID[10]);
 
 #endif

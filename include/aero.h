@@ -32,36 +32,31 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  ******************************************************************************/
  
-#ifndef AEROANGLE_H_
-#define AEROANGLE_H_
+#ifndef AERO_H_
+#define AERO_H_
 
-#include "LPC17xx.h"
-#include "lpc_types.h"
-#include "aero.h"
+#define ROLL 0
+#define PITCH 1
+#define YAW 2
+#define LASTAXIS 3
+#define LEVELROLL 3
+#define LEVELPITCH 4
+#define LASTLEVELAXIS 5
+#define HEADING 5
+#define LEVELGYROROLL 6
+#define LEVELGYROPITCH 7
+#define ALTITUDE 8
+#define ZDAMPENING 9
+#define XAXIS 0
+#define YAXIS 1
+#define ZAXIS 2
 
-typedef struct {
-  float angle[3];
-  float gyro_angle[2];
-  float corrected_rate_vector[3];
-  float earth_accel[3];
-  float dcm_matrix[9];
-  float omegaP[3];
-  float omegaI[3];
-  float omega[3];
-  float error_course;
-  float kp_roll_pitch;
-  float ki_roll_pitch;
-  float kp_yaw;
-  float ki_yaw;
-  float delta_t
-} FLIGHT_ANGLE_TYPE;
-
-FLIGHT_ANGLE_TYPE* flightAngleInitialize(float hdgX, float hdgY);
-float getAngle(FLIGHT_ANGLE_TYPE* flight_angle, uint8_t axis);
-void printstuff(FLIGHT_ANGLE_TYPE* flight_angle);
-void flightAngleCalculate(FLIGHT_ANGLE_TYPE* flight_angle, \
-    float rollRate,           float pitchRate,     float yawRate, \
-    float longitudinalAccel,  float lateralAccel,  float verticalAccel, \
-    float oneG,               float magX,          float magY);
+#define FRONT 0
+#define REAR 1
+#define RIGHT 2
+#define LEFT 3
+#define MINCOMMAND 1000
+#define MAXCOMMAND 2000
+#define LASTMOTOR 4
 
 #endif

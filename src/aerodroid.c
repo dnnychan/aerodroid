@@ -48,14 +48,15 @@
 #include "lpc17xx_systick.h"
 #include "cr_dsplib.h"
 #include "aeroangle.h"
+#include "aeroflight.h"
+#include "aero.h"
 
 
 /*****************************************************************************
 
         Hardware Initialization Routine
 
-*****************************************************************************/
-
+*****************************************************************************/ 
 int Init_PWM(uint8_t MatchChannel,uint32_t MatchValue)
 {
     PWM_MATCHCFG_Type PWMMatchCfgDat;
@@ -155,6 +156,52 @@ int aeroInit(uint8_t * args)
     return 0;
 }
 
+void aeroPIDValuesInit(tS_pid_Coeff* PID[10])
+{
+  //scaled by *100
+  PID[ROLL]->Kp = 10000;
+  PID[ROLL]->Ki = 00;
+  PID[ROLL]->Kd = -30000;
+  PID[ROLL]->IntegratedError = 0;
+  PID[ROLL]->LastError = 0;
+  PID[PITCH]->Kp = 10000;
+  PID[PITCH]->Ki = 00;
+  PID[PITCH]->Kd = -30000;
+  PID[PITCH]->IntegratedError = 0;
+  PID[PITCH]->LastError = 0;
+  PID[YAW]->Kp = 20000;
+  PID[YAW]->Ki = 500;
+  PID[YAW]->Kd = 00;
+  PID[YAW]->IntegratedError = 0;
+  PID[YAW]->LastError = 0;
+  PID[LEVELROLL]->Kp = 400;
+  PID[LEVELROLL]->Ki = 060;
+  PID[LEVELROLL]->Kd = 00;
+  PID[LEVELROLL]->IntegratedError = 0;
+  PID[LEVELROLL]->LastError = 0;
+  PID[LEVELPITCH]->Kp = 400;
+  PID[LEVELPITCH]->Ki = 060;
+  PID[LEVELPITCH]->Kd = 00;
+  PID[LEVELPITCH]->IntegratedError = 0;
+  PID[LEVELPITCH]->LastError = 0;
+  PID[HEADING]->Kp = 300;
+  PID[HEADING]->Ki = 010;
+  PID[HEADING]->Kd = 00;
+  PID[HEADING]->IntegratedError = 0;
+  PID[HEADING]->LastError = 0;
+  // AKA PID experiements
+  PID[LEVELGYROROLL]->Kp = 10000;
+  PID[LEVELGYROROLL]->Ki = 00;
+  PID[LEVELGYROROLL]->Kd = -30000;
+  PID[LEVELGYROROLL]->IntegratedError = 0;
+  PID[LEVELGYROROLL]->LastError = 0;
+  PID[LEVELGYROPITCH]->Kp = 10000;
+  PID[LEVELGYROPITCH]->Ki = 00;
+  PID[LEVELGYROPITCH]->Kd = -30000;
+  PID[LEVELGYROPITCH]->IntegratedError = 0;
+  PID[LEVELGYROPITCH]->LastError = 0;
+}
+
 int aeroLoop(uint8_t * args)
 {
   uint8_t * arg_ptr;
@@ -175,6 +222,13 @@ int aeroLoop(uint8_t * args)
   float gyro_x, gyro_y, gyro_z;
   int i;
   FLIGHT_ANGLE_TYPE* flight_angle = flightAngleInitialize(1.0, 0.0);
+  MOTORS_TYPE* motors = motorsInit();
+  tS_pid_Coeff* PID[10];
+  
+  for (i=0; i<10; i++)
+    PID[i]=(tS_pid_Coeff*)malloc(sizeof(tS_pid_Coeff));
+
+  aeroPIDValuesInit(PID);
     
   while (1)
   {
@@ -192,9 +246,6 @@ int aeroLoop(uint8_t * args)
     gyro_z=twosComplement(gyro_data[4], gyro_data[5])/3754.9;//131.072;
     
     flightAngleCalculate(flight_angle, gyro_x, gyro_y, gyro_z, accel_x, accel_y, accel_z, accel_OneG, 1, 0);
-    //flightAngleCalculate(flight_angle, 0, 0, 0, 0, 0, 0, accel_OneG, 1, 0);
-    //sprintf((char *) str, "angle=[%f,%f,%f]\r\n", getAngle(flight_angle, ROLL), getAngle(flight_angle, PITCH), getAngle(flight_angle, YAW));
-    //writeUSBOutString(str);
     
     sprintf((char *) str, "accel=[%i,%i,%i]\r\n", (int)(accel_x*1000), (int)(accel_y*1000), (int)(accel_z*1000));
     writeUSBOutString(str);
@@ -203,6 +254,8 @@ int aeroLoop(uint8_t * args)
     writeUSBOutString(str);
     
     printstuff(flight_angle);
+    
+    processFlightControl(motors, flight_angle, PID);
   }
 
   return 0;

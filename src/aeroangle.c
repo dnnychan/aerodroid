@@ -102,7 +102,7 @@ FLIGHT_ANGLE_TYPE* flightAngleInitialize(float hdgX, float hdgY)
 
 float getAngle(FLIGHT_ANGLE_TYPE* flight_angle, uint8_t axis)
 {
-  return flight_angle->angle[axis];
+  return flight_angle->angle[axis]*180/3.14159;
 }
 
 void printstuff(FLIGHT_ANGLE_TYPE* flight_angle)
