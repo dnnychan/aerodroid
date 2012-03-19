@@ -1,6 +1,6 @@
 /*******************************************************************************
  * @file
- * @purpose        
+ * @purpose
  * @version        0.1
  *------------------------------------------------------------------------------
  * Copyright (C) 2011 Gumstix Inc.
@@ -11,14 +11,14 @@
  *------------------------------------------------------------------------------
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  * Redistributions of source code must retain the above copyright notice, this
  *     list of conditions and the following disclaimer.
- * 
+ *
  * Redistributions in binary form must reproduce the above copyright notice,
  *  this list of conditions and the following disclaimer in the documentation
  *  and/or other materials provided with the distribution.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED
@@ -39,7 +39,9 @@
 #include "lpc_types.h"
 #include "lpc17xx_gpio.h"
 #include "lpc17xx_pinsel.h"
+#include "lpc17xx_pwm.h"
 #include "lpc17xx_can.h"
+#include "aerodroid.h"
 
 /*****************************************************************************
 
@@ -62,7 +64,7 @@ void IntHandler(void)
      */
     NVIC_DisableIRQ(int_num);
 
-    /*   
+    /*
      * Send the interrupt signal and number
      */
     sprintf((char*) int_str, "\r\n%x\r\n", int_num);
@@ -75,6 +77,43 @@ void IntHandler(void)
 
 *****************************************************************************/
 
+int PWMMatchInit(uint8_t MatchChannel,uint32_t MatchValue)
+{
+    PWM_MATCHCFG_Type PWMMatchCfgDat;
+
+    PWM_MatchUpdate(LPC_PWM1, MatchChannel, MatchValue, PWM_MATCH_UPDATE_NOW);
+    PWMMatchCfgDat.IntOnMatch = DISABLE;
+    PWMMatchCfgDat.MatchChannel = MatchChannel;
+    if (!MatchChannel)
+        PWMMatchCfgDat.ResetOnMatch = ENABLE;
+    else
+        PWMMatchCfgDat.ResetOnMatch = DISABLE;
+    PWMMatchCfgDat.StopOnMatch = DISABLE;
+    PWM_ConfigMatch(LPC_PWM1, &PWMMatchCfgDat);
+
+    return 0;
+}
+
+void PWMInit(void)
+{
+      int i;
+    _roboveroConfig(NULL);
+
+    PWMMatchInit(0, 20000);
+    for (i=1; i<5; i++)
+    {
+      PWMMatchInit(i, 1250);
+      PWM_ChannelCmd(LPC_PWM1, i, ENABLE);
+    }
+
+    PWMMatchInit(1, 1250);
+    PWM_ChannelCmd(LPC_PWM1, 1, ENABLE);
+    PWM_ResetCounter(LPC_PWM1);
+    PWM_CounterCmd(LPC_PWM1, ENABLE);
+    PWM_Cmd(LPC_PWM1, ENABLE);
+
+    //PWM_MatchUpdate(LPC_PWM1, 1, 1250, PWM_MATCH_UPDATE_NOW);
+}
 void hwInit(void)
 {
     /*
@@ -112,6 +151,7 @@ int main(void)
 {
     hwInit();
 
+    PWMInit();
 
     /*
      * let usbuser/robovero handle the rest

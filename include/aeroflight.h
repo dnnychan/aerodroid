@@ -1,6 +1,6 @@
 /*******************************************************************************
  * @file
- * @purpose        
+ * @purpose
  * @version        0.1
  *------------------------------------------------------------------------------
  * Copyright (C) 2012 Gumstix Inc.
@@ -11,14 +11,14 @@
  *------------------------------------------------------------------------------
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  * Redistributions of source code must retain the above copyright notice, this
  *     list of conditions and the following disclaimer.
- * 
+ *
  * Redistributions in binary form must reproduce the above copyright notice,
  *  this list of conditions and the following disclaimer in the documentation
  *  and/or other materials provided with the distribution.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED
@@ -31,7 +31,7 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  ******************************************************************************/
- 
+
 #ifndef AEROFLIGHT_H_
 #define AEROFLIGHT_H_
 
@@ -62,6 +62,6 @@ const int getMotorCommand(MOTORS_TYPE*motors, int motor);
 void writeMotors(MOTORS_TYPE* motors);
 
 //Flight commands
-void processFlightControl(MOTORS_TYPE* motors, FLIGHT_ANGLE_TYPE* flight_angle, tS_pid_Coeff* PID[10]);
+void processFlightControl(MOTORS_TYPE* motors, FLIGHT_ANGLE_TYPE* flight_angle, tS_pid_Coeff* PID[10], VECTOR gyro_data);
 
 #endif

@@ -1,6 +1,6 @@
 /*******************************************************************************
  * @file
- * @purpose        
+ * @purpose
  * @version        0.1
  *------------------------------------------------------------------------------
  * Copyright (C) 2012 Gumstix Inc.
@@ -11,14 +11,14 @@
  *------------------------------------------------------------------------------
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  * Redistributions of source code must retain the above copyright notice, this
  *     list of conditions and the following disclaimer.
- * 
+ *
  * Redistributions in binary form must reproduce the above copyright notice,
  *  this list of conditions and the following disclaimer in the documentation
  *  and/or other materials provided with the distribution.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED
@@ -72,16 +72,16 @@ const int getMaxCommand(MOTORS_TYPE*motors, int motor) {
 const int getMinCommand(MOTORS_TYPE*motors, int motor) {
   return motors->min_command[motor];
 }
-  
+
 void writeMotors(MOTORS_TYPE* motors) {
   PWM_MatchUpdate(LPC_PWM1, FRONT, motors->motor_command[FRONT], PWM_MATCH_UPDATE_NOW);
   PWM_MatchUpdate(LPC_PWM1, REAR,  motors->motor_command[REAR], PWM_MATCH_UPDATE_NOW);
   PWM_MatchUpdate(LPC_PWM1, RIGHT, motors->motor_command[RIGHT], PWM_MATCH_UPDATE_NOW);
   PWM_MatchUpdate(LPC_PWM1, LEFT,  motors->motor_command[LEFT], PWM_MATCH_UPDATE_NOW);
-  
-  sprintf((char *) str, "motor command: [%i, %i]\r\n",(int)(getMotorCommand(motors,FRONT)), (int)(getMotorCommand(motors,RIGHT)));
+
+  sprintf((char *) str, "motor command: [%i, %i]\r\n",(int)(getMotorCommand(motors,LEFT)), (int)(getMotorCommand(motors,FRONT)));
   writeUSBOutString(str);
-  sprintf((char *) str, "motor command: [%i, %i]\r\n",(int)(getMotorCommand(motors,LEFT)), (int)(getMotorCommand(motors,REAR)));
+  sprintf((char *) str, "motor command: [%i, %i]\r\n",(int)(getMotorCommand(motors,REAR)), (int)(getMotorCommand(motors,RIGHT)));
   writeUSBOutString(str);
 }
 
@@ -90,16 +90,19 @@ void calculateFlightError(MOTORS_TYPE* motors, FLIGHT_ANGLE_TYPE* flight_angle, 
   //float pitchAttitudeCmd = updatePID((receiver.getData(PITCH) - receiver.getZero(PITCH)) * ATTITUDE_SCALING, -flightAngle->getData(PITCH), &PID[LEVELPITCH]);
   //motors.setMotorAxisCommand(ROLL, updatePID(rollAttitudeCmd, gyro.getData(ROLL), &PID[LEVELGYROROLL]));
   //motors.setMotorAxisCommand(PITCH, updatePID(pitchAttitudeCmd, -gyro.getData(PITCH), &PID[LEVELGYROPITCH]));
-  float roll_altitude_cmd  = vF_dspl_pid((int)(getAngle(flight_angle, ROLL)),  PID[LEVELROLL])  / 100.0;
-  float pitch_altitude_cmd = vF_dspl_pid((int)(getAngle(flight_angle, PITCH)), PID[LEVELPITCH]) / 100.0;
-  
-  sprintf((char *) str, "altitude cmd: [%i, %i]\r\n",(int)(roll_altitude_cmd), (int)pitch_altitude_cmd);
+  float roll_altitude_cmd  = vF_dspl_pid((int)(getAngle(flight_angle, ROLL)*1000),  PID[LEVELROLL])  / 100.0/1000.0;
+  float pitch_altitude_cmd = vF_dspl_pid((int)(getAngle(flight_angle, PITCH)*1000), PID[LEVELPITCH]) / 100.0/1000.0;
+
+  sprintf((char *) str, "altitude cmd: [%i, %i]\r\n",(int)(roll_altitude_cmd*1000), (int)(pitch_altitude_cmd*1000));
   writeUSBOutString(str);
-  
-  setMotorAxisCommand(motors, ROLL,  vF_dspl_pid((int)( roll_altitude_cmd - gyro_data.x), PID[LEVELGYROROLL])  / 100.0);
-  setMotorAxisCommand(motors, PITCH, vF_dspl_pid((int)(pitch_altitude_cmd + gyro_data.y), PID[LEVELGYROPITCH]) / 100.0);
-  
-  sprintf((char *) str, "axis command: [%i, %i, %i]\r\n",(int)(getMotorAxisCommand(motors,ROLL)), (int)(getMotorAxisCommand(motors,PITCH)),(int)(getMotorAxisCommand(motors,YAW)));
+
+  sprintf((char *) str, "gyro data: [%i, %i]\r\n",(int)(gyro_data.y*1000), (int)(-gyro_data.x*1000));
+  writeUSBOutString(str);
+
+  setMotorAxisCommand(motors, ROLL,  vF_dspl_pid((int)(( roll_altitude_cmd - (gyro_data.y)) * 100), PID[LEVELGYROROLL])  / 1.0 / 100.0);
+  setMotorAxisCommand(motors, PITCH, vF_dspl_pid((int)((pitch_altitude_cmd + (-gyro_data.x)) * 100), PID[LEVELGYROPITCH]) / 1.0 / 100.0);
+
+  sprintf((char *) str, "axis command: [%i, %i, %i]\r\n", (int)(getMotorAxisCommand(motors,ROLL)), (int)(getMotorAxisCommand(motors,PITCH)),(int)(getMotorAxisCommand(motors,YAW)));
   writeUSBOutString(str);
 
 }
@@ -107,25 +110,25 @@ void calculateFlightError(MOTORS_TYPE* motors, FLIGHT_ANGLE_TYPE* flight_angle, 
 void processFlightControl(MOTORS_TYPE* motors, FLIGHT_ANGLE_TYPE* flight_angle, tS_pid_Coeff* PID[10], VECTOR gyro_data)
 {
   int throttle=1500, motor;
-  
+
   calculateFlightError(motors, flight_angle, PID, gyro_data);
-  
+
   //do some yaw thing
-  
+
   //altitude
 
   // Plus mode
-  /*setMotorCommand(motors, FRONT, throttle - getMotorAxisCommand(motors, PITCH) - getMotorAxisCommand(motors, YAW));
+  setMotorCommand(motors, FRONT, throttle - getMotorAxisCommand(motors, PITCH) - getMotorAxisCommand(motors, YAW));
   setMotorCommand(motors, RIGHT, throttle - getMotorAxisCommand(motors, ROLL)  + getMotorAxisCommand(motors, YAW));
   setMotorCommand(motors, LEFT,  throttle + getMotorAxisCommand(motors, ROLL)  + getMotorAxisCommand(motors, YAW));
   setMotorCommand(motors, REAR,  throttle + getMotorAxisCommand(motors, PITCH) - getMotorAxisCommand(motors, YAW));
-  */
+
   // X mode
-  setMotorCommand(motors, FRONT, throttle - getMotorAxisCommand(motors, PITCH) + getMotorAxisCommand(motors, ROLL) - getMotorAxisCommand(motors, YAW));
+  /*setMotorCommand(motors, FRONT, throttle - getMotorAxisCommand(motors, PITCH) + getMotorAxisCommand(motors, ROLL) - getMotorAxisCommand(motors, YAW));
   setMotorCommand(motors, RIGHT, throttle - getMotorAxisCommand(motors, PITCH) - getMotorAxisCommand(motors, ROLL) + getMotorAxisCommand(motors, YAW));
   setMotorCommand(motors, LEFT,  throttle + getMotorAxisCommand(motors, PITCH) + getMotorAxisCommand(motors, ROLL) + getMotorAxisCommand(motors, YAW));
-  setMotorCommand(motors, REAR,  throttle + getMotorAxisCommand(motors, PITCH) - getMotorAxisCommand(motors, ROLL) - getMotorAxisCommand(motors, YAW)); 
-  
+  setMotorCommand(motors, REAR,  throttle + getMotorAxisCommand(motors, PITCH) - getMotorAxisCommand(motors, ROLL) - getMotorAxisCommand(motors, YAW));
+  */
   //maxmin
   for (motor = FRONT; motor < LASTMOTOR; motor++) {
     if (getMotorCommand(motors, motor) > getMaxCommand(motors,motor))
@@ -133,6 +136,6 @@ void processFlightControl(MOTORS_TYPE* motors, FLIGHT_ANGLE_TYPE* flight_angle, 
     else if (getMotorCommand(motors, motor) < getMinCommand(motors,motor))
       setMotorCommand(motors, motor, getMinCommand(motors,motor));
   }
-  
+
   writeMotors(motors);
 }
