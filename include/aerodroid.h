@@ -37,13 +37,39 @@
 
 #include "lpc_types.h"
 #include "lpc17xx_i2c.h"
+#include "LPC17xx.h"
 
-int Init_PWM(uint8_t MatchChannel,uint32_t MatchValue);
+#include <math.h>
+
+#include "return.h"
+#include "table.h"
+#include "extras.h"
+
+#include "aero.h"
+#include "aeroangle.h"
+#include "aeroflight.h"
+
+I2C_M_SETUP_Type* accelerometer;
+I2C_M_SETUP_Type* gyro;
+
+uint8_t* accel_raw;
+uint8_t* gyro_raw;
+
+VECTOR accel_data, gyro_data;
+
+tS_pid_Coeff* PID[10];
+FLIGHT_ANGLE_TYPE* flight_angle;
+MOTORS_TYPE* motors;
+
 int twosComplement(uint8_t low_byte, uint8_t high_byte);
-int writeReg(I2C_M_SETUP_Type* device,uint8_t reg, uint32_t value);
+void writeReg(I2C_M_SETUP_Type* device,uint8_t reg, uint32_t value);
 uint8_t* read6Reg(I2C_M_SETUP_Type* device,uint8_t reg, uint8_t* rx_data6);
 int aeroInit(uint8_t * args);
-int aeroLoop(uint8_t * args);
+void aeroLoop(uint8_t * args);
+int _aeroLoopOff(uint8_t * args);
+int _aeroLoopOn(uint8_t * args);
+int _getMotorCommands(uint8_t* args);
+void stopAllMotors(void);
 
 #endif
 

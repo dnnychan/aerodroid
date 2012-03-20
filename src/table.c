@@ -1285,6 +1285,10 @@ const _nxp_function driver_table[] = {
     {(uint8_t *) "tS_pid_Coeff_LastError", _tS_pid_Coeff_LastError},
     {(uint8_t *) "aeroInit", aeroInit},
     {(uint8_t *) "aeroLoop", aeroLoop},
+    {(uint8_t *) "aeroLoopOn", _aeroLoopOn},
+    {(uint8_t *) "aeroLoopOff", _aeroLoopOff},
+    {(uint8_t *) "setThrottle", _setThrottle},
+    {(uint8_t *) "getMotorCommands", _getMotorCommands},
 
 };
 

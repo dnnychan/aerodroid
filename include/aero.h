@@ -55,9 +55,13 @@
 #define RIGHT 1
 #define REAR 2
 #define LEFT 3
-#define MINCOMMAND 1000
-#define MAXCOMMAND 2000
+#define MINCOMMAND 1250
+#define MAXCOMMAND 1750
 #define LASTMOTOR 4
+
+#define ACCEL_X_LOW 0x28
+#define GYRO_X_LOW 0x28
+#define ACCEL_ONEG 9.81
 
 typedef struct {
   float x, y, z;

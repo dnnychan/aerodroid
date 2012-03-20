@@ -65,6 +65,7 @@
 #include "_core.h"
 #include "_cr_dsplib.h"
 #include "aerodroid.h"
+#include "aeroflight.h"
 
 typedef struct {
         uint8_t * fcn_name;

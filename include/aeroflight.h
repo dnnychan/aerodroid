@@ -39,12 +39,13 @@
 #include "lpc_types.h"
 #include "lpc17xx_pwm.h"
 
-#include "table.h"
 #include "return.h"
 #include "cr_dsplib.h"
 
 #include "aeroangle.h"
 #include "aero.h"
+
+int _setThrottle(uint8_t * args);
 
 //Motor related commands
 typedef struct {

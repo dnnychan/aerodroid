@@ -37,7 +37,10 @@
 
 #include "LPC17xx.h"
 #include "lpc_types.h"
+
 #include "aero.h"
+#include "cr_dsplib.h"
+#include "matrix_math.h"
 
 typedef struct {
   float angle[3];

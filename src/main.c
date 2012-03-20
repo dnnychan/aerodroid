@@ -40,8 +40,12 @@
 #include "lpc17xx_gpio.h"
 #include "lpc17xx_pinsel.h"
 #include "lpc17xx_pwm.h"
-#include "lpc17xx_can.h"
+#include "lpc17xx_systick.h"
 #include "aerodroid.h"
+
+void SysTickHandler(void);
+extern int aeroLoop_on;
+//FunctionalState Cur_State = ENABLE;
 
 /*****************************************************************************
 
@@ -71,6 +75,32 @@ void IntHandler(void)
     writeUSBOutString(int_str);
 }
 
+/*********************************************************************//**
+ * @brief 		SysTick interrupt handler
+ * @param		None
+ * @return 		None
+ ***********************************************************************/
+void SysTickHandler(void)
+{
+	//Clear System Tick counter flag
+	SYSTICK_ClearCounterFlag();
+
+  if (aeroLoop_on)
+    aeroLoop(0);
+	//toggle P0.0
+	/*if (Cur_State == ENABLE)
+	{
+		//pull-down pin
+		GPIO_ClearValue(3, (1 << 25));
+		Cur_State = DISABLE;
+	}
+	else
+	{
+		GPIO_SetValue(3, (1 << 25));
+		Cur_State = ENABLE;
+	}*/
+}
+
 /*****************************************************************************
 
         Hardware Initialization Routine
@@ -96,11 +126,11 @@ int PWMMatchInit(uint8_t MatchChannel,uint32_t MatchValue)
 
 void PWMInit(void)
 {
-      int i;
+    int i=1;
     _roboveroConfig(NULL);
 
     PWMMatchInit(0, 20000);
-    for (i=1; i<5; i++)
+    for (i=2; i<6; i++)
     {
       PWMMatchInit(i, 1250);
       PWM_ChannelCmd(LPC_PWM1, i, ENABLE);
@@ -149,9 +179,8 @@ extern int heartbeat_on;
 
 int main(void)
 {
-    hwInit();
-
     PWMInit();
+    hwInit();
 
     /*
      * let usbuser/robovero handle the rest

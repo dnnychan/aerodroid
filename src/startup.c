@@ -43,6 +43,7 @@ static void IntDefaultHandler(void);
 
 extern void USB_IRQHandler(void);
 extern void IntHandler(void);
+extern void SysTickHandler(void);
 extern int main(void);
 
 /*
@@ -75,7 +76,7 @@ void (* const g_pfnVectors[])(void) =
     IntDefaultHandler,                    /* Debug Monitor Handler            */
     0,                                    /* Reserved                         */
     IntDefaultHandler,                    /* PendSV Handler                   */
-    IntDefaultHandler,                    /* SysTick Handler                  */
+    SysTickHandler,                       /* SysTick Handler                  */
 
     IntHandler,                           /* 16: Watchdog Timer               */
     IntHandler,                           /* 17: Timer0                       */

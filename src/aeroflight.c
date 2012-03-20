@@ -34,17 +34,29 @@
 
 #include "aeroflight.h"
 
-MOTORS_TYPE* motorsInit(void)
+int throttle=1500;
+
+int _setThrottle(uint8_t * args)
 {
+  uint8_t * arg_ptr;
+
+  if ((arg_ptr = (uint8_t *) strtok(NULL, " ")) == NULL) return 1;
+  throttle = (int) strtoul((char *) arg_ptr, NULL, 16);
+  
+  return 0;
+}
+
+MOTORS_TYPE* motorsInit(void) {
   MOTORS_TYPE * motors= (MOTORS_TYPE*) malloc(sizeof(MOTORS_TYPE));
   int i;
   motors->axis_command[ROLL] = 0;
   motors->axis_command[PITCH] = 0;
   motors->axis_command[YAW] = 0;
   for (i=0; i<LASTMOTOR; i++) {
-    motors->min_command[i]=1250;
-    motors->motor_command[i]=0;
-    motors->max_command[i]=1750;
+    motors->min_command[i]=MINCOMMAND;
+    motors->motor_command[i]=MINCOMMAND;
+    //motors->motor_command[i]=MAXCOMMAND;
+    motors->max_command[i]=MAXCOMMAND;
   }
   return motors;
 }
@@ -74,15 +86,10 @@ const int getMinCommand(MOTORS_TYPE*motors, int motor) {
 }
 
 void writeMotors(MOTORS_TYPE* motors) {
-  PWM_MatchUpdate(LPC_PWM1, FRONT, motors->motor_command[FRONT], PWM_MATCH_UPDATE_NOW);
-  PWM_MatchUpdate(LPC_PWM1, REAR,  motors->motor_command[REAR], PWM_MATCH_UPDATE_NOW);
-  PWM_MatchUpdate(LPC_PWM1, RIGHT, motors->motor_command[RIGHT], PWM_MATCH_UPDATE_NOW);
-  PWM_MatchUpdate(LPC_PWM1, LEFT,  motors->motor_command[LEFT], PWM_MATCH_UPDATE_NOW);
-
-  sprintf((char *) str, "motor command: [%i, %i]\r\n",(int)(getMotorCommand(motors,LEFT)), (int)(getMotorCommand(motors,FRONT)));
-  writeUSBOutString(str);
-  sprintf((char *) str, "motor command: [%i, %i]\r\n",(int)(getMotorCommand(motors,REAR)), (int)(getMotorCommand(motors,RIGHT)));
-  writeUSBOutString(str);
+  PWM_MatchUpdate(LPC_PWM1, FRONT+5, (uint32_t)getMotorCommand(motors, FRONT), PWM_MATCH_UPDATE_NEXT_RST);
+  PWM_MatchUpdate(LPC_PWM1, REAR+1,  (uint32_t)getMotorCommand(motors, REAR),  PWM_MATCH_UPDATE_NEXT_RST);
+  PWM_MatchUpdate(LPC_PWM1, RIGHT+1, (uint32_t)getMotorCommand(motors, RIGHT), PWM_MATCH_UPDATE_NEXT_RST);
+  PWM_MatchUpdate(LPC_PWM1, LEFT+1,  (uint32_t)getMotorCommand(motors, LEFT),  PWM_MATCH_UPDATE_NEXT_RST);
 }
 
 void calculateFlightError(MOTORS_TYPE* motors, FLIGHT_ANGLE_TYPE* flight_angle, tS_pid_Coeff* PID[10], VECTOR gyro_data) {
@@ -93,23 +100,23 @@ void calculateFlightError(MOTORS_TYPE* motors, FLIGHT_ANGLE_TYPE* flight_angle, 
   float roll_altitude_cmd  = vF_dspl_pid((int)(getAngle(flight_angle, ROLL)*1000),  PID[LEVELROLL])  / 100.0/1000.0;
   float pitch_altitude_cmd = vF_dspl_pid((int)(getAngle(flight_angle, PITCH)*1000), PID[LEVELPITCH]) / 100.0/1000.0;
 
-  sprintf((char *) str, "altitude cmd: [%i, %i]\r\n",(int)(roll_altitude_cmd*1000), (int)(pitch_altitude_cmd*1000));
-  writeUSBOutString(str);
+  //sprintf((char *) str, "altitude cmd: [%i, %i]\r\n",(int)(roll_altitude_cmd*1000), (int)(pitch_altitude_cmd*1000));
+  //writeUSBOutString(str);
 
-  sprintf((char *) str, "gyro data: [%i, %i]\r\n",(int)(gyro_data.y*1000), (int)(-gyro_data.x*1000));
-  writeUSBOutString(str);
+  //sprintf((char *) str, "gyro data: [%i, %i]\r\n",(int)(gyro_data.y*1000), (int)(-gyro_data.x*1000));
+  //writeUSBOutString(str);
 
   setMotorAxisCommand(motors, ROLL,  vF_dspl_pid((int)(( roll_altitude_cmd - (gyro_data.y)) * 100), PID[LEVELGYROROLL])  / 1.0 / 100.0);
   setMotorAxisCommand(motors, PITCH, vF_dspl_pid((int)((pitch_altitude_cmd + (-gyro_data.x)) * 100), PID[LEVELGYROPITCH]) / 1.0 / 100.0);
 
-  sprintf((char *) str, "axis command: [%i, %i, %i]\r\n", (int)(getMotorAxisCommand(motors,ROLL)), (int)(getMotorAxisCommand(motors,PITCH)),(int)(getMotorAxisCommand(motors,YAW)));
-  writeUSBOutString(str);
+  //sprintf((char *) str, "axis command: [%i, %i, %i]\r\n", (int)(getMotorAxisCommand(motors,ROLL)), (int)(getMotorAxisCommand(motors,PITCH)),(int)(getMotorAxisCommand(motors,YAW)));
+  //writeUSBOutString(str);
 
 }
 
 void processFlightControl(MOTORS_TYPE* motors, FLIGHT_ANGLE_TYPE* flight_angle, tS_pid_Coeff* PID[10], VECTOR gyro_data)
 {
-  int throttle=1500, motor;
+  int motor;
 
   calculateFlightError(motors, flight_angle, PID, gyro_data);
 
@@ -137,5 +144,5 @@ void processFlightControl(MOTORS_TYPE* motors, FLIGHT_ANGLE_TYPE* flight_angle, 
       setMotorCommand(motors, motor, getMinCommand(motors,motor));
   }
 
-  writeMotors(motors);
+  //writeMotors(motors);
 }

@@ -32,98 +32,13 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  ******************************************************************************/
 
-#include <math.h>
-
-#include "return.h"
-#include "table.h"
-#include "extras.h"
-
-#include "LPC17xx.h"
-#include "lpc_types.h"
-#include "lpc17xx_gpio.h"
 #include "lpc17xx_pinsel.h"
-#include "lpc17xx_can.h"
 #include "lpc17xx_pwm.h"
-#include "lpc17xx_i2c.h"
 #include "lpc17xx_systick.h"
 #include "cr_dsplib.h"
-#include "aeroangle.h"
-#include "aeroflight.h"
-#include "aero.h"
+#include "aerodroid.h"
 
-
-/*****************************************************************************
-
-        Hardware Initialization Routine
-
-*****************************************************************************/
-int twosComplement(uint8_t low_byte, uint8_t high_byte)
-{
-  return ((int)((low_byte + (high_byte << 8)) + pow(2,15)) % (int)pow(2,16) - pow(2,15));
-}
-
-int writeReg(I2C_M_SETUP_Type* device,uint8_t reg, uint32_t value)
-{
-    device->tx_data[0] = reg;
-    device->tx_data[1] = value;
-    device->tx_length = 2;
-    device->rx_data = 0;
-    device->rx_length = 0;
-    ret = I2C_MasterTransferData(LPC_I2C0, device, I2C_TRANSFER_POLLING);
-    return 0;
-}
-
-uint8_t* read6Reg(I2C_M_SETUP_Type* device,uint8_t reg, uint8_t* rx_data6)
-{
-    device->tx_data[0] = reg | 0b10000000; //MSB must be equal to 1 to read multiple bytes
-    device->tx_length = 1;
-    device->rx_data = rx_data6;
-    device->rx_length = 6;
-    ret = I2C_MasterTransferData(LPC_I2C0, device,I2C_TRANSFER_POLLING);
-    return rx_data6;
-}
-
-int aeroInit(uint8_t * args)
-{
-    uint8_t * arg_ptr;
-    I2C_M_SETUP_Type* accelerometer;
-    I2C_M_SETUP_Type* gyro;
-
-    if ((arg_ptr = (uint8_t *) strtok(NULL, " ")) == NULL) return 1;
-    accelerometer = (I2C_M_SETUP_Type*) strtoul((char *) arg_ptr, NULL, 16);
-    if ((arg_ptr = (uint8_t *) strtok(NULL, " ")) == NULL) return 1;
-    gyro = (I2C_M_SETUP_Type*) strtoul((char *) arg_ptr, NULL, 16);
-
-    uint8_t accel_ctrl_reg1 = 0x20;
-    uint8_t accel_ctrl_reg4 = 0x23;
-
-    uint8_t gyro_ctrl_reg1 = 0x20;
-    //uint8_t gyro_ctrl_reg2 = 0x21;
-    uint8_t gyro_ctrl_reg3 = 0x22;
-    uint8_t gyro_ctrl_reg4 = 0x23;
-    //uint8_t gyro_ctrl_reg5 = 0x24;
-    //uint8_t gyro_status_reg = 0x27;
-
-    uint8_t* accel_tx_data=malloc(2*sizeof(uint8_t));
-    uint8_t* gyro_tx_data=malloc(2*sizeof(uint8_t));
-
-    accelerometer->sl_addr7bit=0x18;
-    accelerometer->tx_data=accel_tx_data;
-    accelerometer->retransmissions_max=3;
-
-    writeReg(accelerometer,accel_ctrl_reg1,0x27);
-    writeReg(accelerometer,accel_ctrl_reg4, 0x00);
-
-    gyro->sl_addr7bit=0x68;
-    gyro->tx_data=gyro_tx_data;
-    gyro->retransmissions_max=3;
-
-    writeReg(gyro,gyro_ctrl_reg3, 0x08);
-    writeReg(gyro,gyro_ctrl_reg4, 0x80);
-    writeReg(gyro,gyro_ctrl_reg1, 0x0F);
-
-    return 0;
-}
+int aeroLoop_on = FALSE;
 
 void aeroPIDValuesInit(tS_pid_Coeff* PID[10])
 {
@@ -172,62 +87,143 @@ void aeroPIDValuesInit(tS_pid_Coeff* PID[10])
   PID[LEVELGYROPITCH]->LastError = 0;
 }
 
-int aeroLoop(uint8_t * args)
+int twosComplement(uint8_t low_byte, uint8_t high_byte)
+{
+  return ((int)((low_byte + (high_byte << 8)) + pow(2,15)) % (int)pow(2,16) - pow(2,15));
+}
+
+void writeReg(I2C_M_SETUP_Type* device,uint8_t reg, uint32_t value)
+{
+  device->tx_data[0] = reg;
+  device->tx_data[1] = value;
+  device->tx_length = 2;
+  device->rx_data = 0;
+  device->rx_length = 0;
+  ret = I2C_MasterTransferData(LPC_I2C0, device, I2C_TRANSFER_POLLING);
+}
+
+uint8_t* read6Reg(I2C_M_SETUP_Type* device,uint8_t reg, uint8_t* rx_data6)
+{
+  device->tx_data[0] = reg | 0b10000000; //MSB must be equal to 1 to read multiple bytes
+  device->tx_length = 1;
+  device->rx_data = rx_data6;
+  device->rx_length = 6;
+  ret = I2C_MasterTransferData(LPC_I2C0, device, I2C_TRANSFER_POLLING);
+  return rx_data6;
+}
+
+int aeroInit(uint8_t * args)
 {
   uint8_t * arg_ptr;
-  I2C_M_SETUP_Type* accelerometer;
-  I2C_M_SETUP_Type* gyro;
+  int i;
 
   if ((arg_ptr = (uint8_t *) strtok(NULL, " ")) == NULL) return 1;
   accelerometer = (I2C_M_SETUP_Type*) strtoul((char *) arg_ptr, NULL, 16);
   if ((arg_ptr = (uint8_t *) strtok(NULL, " ")) == NULL) return 1;
   gyro = (I2C_M_SETUP_Type*) strtoul((char *) arg_ptr, NULL, 16);
 
-  uint8_t accel_x_low = 0x28;
-  uint8_t gyro_x_low = 0x28;
-  uint8_t* accel_raw=malloc(6*sizeof(uint8_t));
-  uint8_t* gyro_raw=malloc(6*sizeof(uint8_t));
+  uint8_t accel_ctrl_reg1 = 0x20;
+  uint8_t accel_ctrl_reg4 = 0x23;
 
-  VECTOR accel_data, gyro_data;
-  float accel_OneG=9.8;
-  int i;
-  FLIGHT_ANGLE_TYPE* flight_angle = flightAngleInitialize(1.0, 0.0);
-  MOTORS_TYPE* motors = motorsInit();
-  tS_pid_Coeff* PID[10];
+  uint8_t gyro_ctrl_reg1 = 0x20;
+  //uint8_t gyro_ctrl_reg2 = 0x21;
+  uint8_t gyro_ctrl_reg3 = 0x22;
+  uint8_t gyro_ctrl_reg4 = 0x23;
+  //uint8_t gyro_ctrl_reg5 = 0x24;
+  //uint8_t gyro_status_reg = 0x27;
 
+  uint8_t* accel_tx_data=malloc(2*sizeof(uint8_t));
+  uint8_t* gyro_tx_data=malloc(2*sizeof(uint8_t));
+
+  accelerometer->sl_addr7bit=0x18;
+  accelerometer->tx_data=accel_tx_data;
+  accelerometer->retransmissions_max=3;
+
+  writeReg(accelerometer,accel_ctrl_reg1,0x2F);
+  writeReg(accelerometer,accel_ctrl_reg4, 0x00);
+
+  gyro->sl_addr7bit=0x68;
+  gyro->tx_data=gyro_tx_data;
+  gyro->retransmissions_max=3;
+
+  writeReg(gyro,gyro_ctrl_reg3, 0x08);
+  writeReg(gyro,gyro_ctrl_reg4, 0x80);
+  writeReg(gyro,gyro_ctrl_reg1, 0x0F);
+  
+  accel_raw=malloc(6*sizeof(uint8_t));
+  gyro_raw=malloc(6*sizeof(uint8_t));
+  
   for (i=0; i<10; i++)
     PID[i]=(tS_pid_Coeff*)malloc(sizeof(tS_pid_Coeff));
 
   aeroPIDValuesInit(PID);
-
-  while (1)
-  {
-    for (i=0; i<372000; i++);
-
-    accel_raw=read6Reg(accelerometer,accel_x_low,accel_raw);
-    gyro_raw=read6Reg(gyro,gyro_x_low,gyro_raw);
-
-    accel_data.x=twosComplement(accel_raw[0], accel_raw[1])/835.9;
-    accel_data.y=twosComplement(accel_raw[2], accel_raw[3])/835.9;
-    accel_data.z=twosComplement(accel_raw[4], accel_raw[5])/835.9;
-
-    gyro_data.x=twosComplement(gyro_raw[0], gyro_raw[1])/3754.956;  //radians //131.072; //degrees
-    gyro_data.y=twosComplement(gyro_raw[2], gyro_raw[3])/3754.956;  //radians //131.072; //degrees
-    gyro_data.z=twosComplement(gyro_raw[4], gyro_raw[5])/3754.956;  //radians //131.072; //degrees
-
-    //flightAngleCalculate(flight_angle, gyro_data.x, gyro_data.y, gyro_data.z, accel_data.x, accel_data.y, accel_data.z, accel_OneG, 1, 0);
-    flightAngleCalculate(flight_angle, gyro_data.y, -gyro_data.x, gyro_data.z, accel_data.x, accel_data.y, accel_data.z, accel_OneG, 1, 0);
-
-    //sprintf((char *) str, "accel=[%i,%i,%i]\r\n", (int)(accel_data.x*1000), (int)(accel_data.y*1000), (int)(accel_data.z*1000));
-    //writeUSBOutString(str);
-
-    //sprintf((char *) str, "gyro=[%i,%i,%i]\r\n", (int)(gyro_data.x*1000), (int)(gyro_data.y*1000), (int)(gyro_data.z*1000));
-    //writeUSBOutString(str);
-
-    printstuff(flight_angle);
-
-    processFlightControl(motors, flight_angle, PID, gyro_data);
-  }
+  
+  flight_angle = flightAngleInitialize(1.0, 0.0);
+  motors = motorsInit();
+  writeMotors(motors);
 
   return 0;
+}
+
+void stopAllMotors(void)
+{
+  setMotorCommand(motors,FRONT,1250);
+  setMotorCommand(motors,RIGHT,1250);
+  setMotorCommand(motors,REAR,1250);
+  setMotorCommand(motors,LEFT,1250);
+  
+  writeMotors(motors);
+}
+
+int _aeroLoopOff(uint8_t * args)
+{
+  aeroLoop_on = FALSE;
+  SYSTICK_IntCmd(DISABLE);
+  SYSTICK_Cmd(DISABLE);
+  
+  stopAllMotors();
+  return 0;
+}
+
+int _aeroLoopOn(uint8_t * args)
+{
+  aeroLoop_on = TRUE;
+    
+  //Initialize System Tick with 20ms time interval
+  SYSTICK_InternalInit(20);
+  //Enable System Tick interrupt
+  SYSTICK_IntCmd(ENABLE);
+  //Enable System Tick Counter
+  SYSTICK_Cmd(ENABLE);
+  return 0;
+}
+
+int _getMotorCommands(uint8_t * args)
+{
+  sprintf((char *) str, "%x %x %x %x\r\n",(int)(getMotorCommand(motors,FRONT)), (int)(getMotorCommand(motors,RIGHT)), (int)(getMotorCommand(motors,REAR)), (int)(getMotorCommand(motors,LEFT)));
+  writeUSBOutString(str);
+  
+  return 0;
+}
+
+void aeroLoop(uint8_t * args)
+{
+  unsigned long i;
+  
+  accel_raw=read6Reg(accelerometer, ACCEL_X_LOW, accel_raw);
+  gyro_raw=read6Reg(gyro, GYRO_X_LOW, gyro_raw);
+
+  accel_data.x=twosComplement(accel_raw[0], accel_raw[1])/835.9;
+  accel_data.y=twosComplement(accel_raw[2], accel_raw[3])/835.9;
+  accel_data.z=twosComplement(accel_raw[4], accel_raw[5])/835.9;
+
+  gyro_data.x=twosComplement(gyro_raw[0], gyro_raw[1])/3754.956;  //radians //131.072; //degrees
+  gyro_data.y=twosComplement(gyro_raw[2], gyro_raw[3])/3754.956;  //radians //131.072; //degrees
+  gyro_data.z=twosComplement(gyro_raw[4], gyro_raw[5])/3754.956;  //radians //131.072; //degrees
+
+  //flightAngleCalculate(flight_angle, gyro_data.x, gyro_data.y, gyro_data.z, accel_data.x, accel_data.y, accel_data.z, ACCEL_ONEG, 1, 0);
+  flightAngleCalculate(flight_angle, gyro_data.y, -gyro_data.x, gyro_data.z, accel_data.x, accel_data.y, accel_data.z, ACCEL_ONEG, 1, 0);
+
+  processFlightControl(motors, flight_angle, PID, gyro_data);
+  writeMotors(motors);
 }

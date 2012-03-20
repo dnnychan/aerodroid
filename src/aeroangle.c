@@ -32,17 +32,11 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  ******************************************************************************/
 
+#include "aeroangle.h"
 #include <math.h>
+
 #include "table.h"
 #include "return.h"
-
-#include "aeroangle.h"
-
-#include "LPC17xx.h"
-#include "lpc_types.h"
-
-#include "cr_dsplib.h"
-#include "matrix_math.h"
 
 void printmatrix(float * matrix, char hi)
 {
@@ -96,7 +90,7 @@ FLIGHT_ANGLE_TYPE* flightAngleInitialize(float hdgX, float hdgY)
 //    flight_angle.kpYaw = -0.1;             // alternate -0.05;
 //    flight_angle.kiYaw = -0.0002;          // alternate -0.0001;
 
-  flight_angle->delta_t = 0.01;
+  flight_angle->delta_t = 0.02;
   return flight_angle;
 }
 
@@ -126,12 +120,6 @@ void matrixUpdate (FLIGHT_ANGLE_TYPE* flight_angle, float rollRate, float pitchR
   matrixSubtract(1,3, &(flight_angle->omega), &rate_gyro_vector, &(flight_angle->omegaI));
   matrixSubtract(1,3, &(flight_angle->corrected_rate_vector), &(flight_angle->omega), &(flight_angle->omegaP));
 
-  //printmatrix(&(flight_angle->omega),'w');
-  //printmatrix(&(flight_angle->omegaI),'I');
-  //printmatrix(&(flight_angle->omegaP),'P');
-  //printmatrix(&(rate_gyro_vector),'r');
-  //printmatrix(&(flight_angle->corrected_rate_vector),'c');
-
   update_matrix[0] = 0;
   update_matrix[1] = -flight_angle->delta_t * flight_angle->corrected_rate_vector[YAW];    // -r
   update_matrix[2] =  flight_angle->delta_t * flight_angle->corrected_rate_vector[PITCH];  //  q
@@ -142,21 +130,8 @@ void matrixUpdate (FLIGHT_ANGLE_TYPE* flight_angle, float rollRate, float pitchR
   update_matrix[7] =  flight_angle->delta_t * flight_angle->corrected_rate_vector[ROLL];
   update_matrix[8] = 0;
 
-  //printmatrix(&update_matrix[0],'u');
-  //printmatrix(&update_matrix[3],'p');
-  //printmatrix(&update_matrix[6],'d');
-
   matrixMultiply(3 ,3 ,3, &product_matrix, &flight_angle->dcm_matrix, &update_matrix);
   matrixAdd(3,3,&flight_angle->dcm_matrix,&flight_angle->dcm_matrix,&product_matrix);
-
-  //for (i=0; i<9; i++)
-  //  flight_angle->dcm_matrix[i]=product_matrix[i];
-
-
-  //printmatrix(&flight_angle->dcm_matrix[0],'d');
-  //printmatrix(&flight_angle->dcm_matrix[3],'c');
-  //printmatrix(&flight_angle->dcm_matrix[6],'m');
-
 }
 
 void normalize (FLIGHT_ANGLE_TYPE* flight_angle)
@@ -167,24 +142,17 @@ void normalize (FLIGHT_ANGLE_TYPE* flight_angle)
   int i;
 
   for (i=0; i<9; i++)
-    //temp_dcm[i]=floatToQ(flight_angle->dcm_matrix[i]);
     temp_dcm[i]=flight_angle->dcm_matrix[i];
 
   X[0]=temp_dcm[0];
   X[1]=temp_dcm[1];
   X[2]=temp_dcm[2];
 
-  //printmatrix(&X,'X');
-
   Y[0]=temp_dcm[3];
   Y[1]=temp_dcm[4];
   Y[2]=temp_dcm[5];
 
-  //printmatrix(&Y,'Y');
-
   error=.5*vectorDotProduct(3, &X, &Y);
-  //sprintf((char *) str, "error=%i\r\n",(int)(error*1000));
-  //writeUSBOutString(str);
 
   matrixScale(1,3,&temp, &Y, error);
   matrixSubtract(1,3,&X_orth, &X, &temp);
@@ -193,28 +161,17 @@ void normalize (FLIGHT_ANGLE_TYPE* flight_angle)
   matrixSubtract(1,3,&Y_orth, &Y, &temp);
 
   vectorCrossProduct(&Z_orth, &X_orth, &Y_orth);
-
-  //printmatrix(&X_orth,'X');
-  //printmatrix(&Y_orth,'Y');
-  //printmatrix(&Z_orth,'Z');
-
+  
   renorm=.5*(3-vectorDotProduct(3,&X_orth, &X_orth));
-  //sprintf((char *) str, "renorm=%i\r\n",(int)(renorm*1000));
-  //writeUSBOutString(str);
   matrixScale(1,3,&(temp_dcm[0]), &X_orth, renorm);
 
   renorm=.5*(3-vectorDotProduct(3,&Y_orth, &Y_orth));
-  //sprintf((char *) str, "renorm=%i\r\n",(int)(renorm*1000));
-  //writeUSBOutString(str);
   matrixScale(1,3,&(temp_dcm[3]), &Y_orth, renorm);
 
   renorm=.5*(3-vectorDotProduct(3,&Z_orth, &Z_orth));
-  //sprintf((char *) str, "renorm=%i\r\n",(int)(renorm*1000));
-  //writeUSBOutString(str);
   matrixScale(1,3,&(temp_dcm[6]), &Z_orth, renorm);
 
   for (i=0; i<9; i++)
-    //flight_angle->dcm_matrix[i]=QToFloat(temp_dcm[i]);
     flight_angle->dcm_matrix[i]=temp_dcm[i];
 }
 
@@ -235,9 +192,6 @@ void driftCorrection(FLIGHT_ANGLE_TYPE* flight_angle, float ax, float ay, float 
                          accel_vector[YAXIS] * accel_vector[YAXIS] + \
                          accel_vector[ZAXIS] * accel_vector[ZAXIS])) / oneG;
 
-  //sprintf((char *) str, "accel_magnitude: %i\r\n",(int)(accel_magnitude*1000));
-  //writeUSBOutString(str);
-
   // Weight for accelerometer info (<0.5G = 0.0, 1G = 1.0 , >1.5G = 0.0)
   //accel_weight = constrain(1 - 2 * abs(1 - accel_magnitude), 0, 1);
   /*accel_weight = 1 - 2 * abs(1 - accel_magnitude);
@@ -247,15 +201,11 @@ void driftCorrection(FLIGHT_ANGLE_TYPE* flight_angle, float ax, float ay, float 
     accel_weight = 0.0;*/
   accel_weight=1;
 
-  //sprintf((char *) str, "accel_weight: %i\r\n",(int)(accel_weight*1000));
-  //writeUSBOutString(str);
 
   vectorCrossProduct(&error_roll_pitch, &accel_vector, &flight_angle->dcm_matrix[6]);
-  //printmatrix(&error_roll_pitch,'e');
   matrixScale(1, 3, &flight_angle->omegaP, &error_roll_pitch, flight_angle->kp_roll_pitch * accel_weight);
 
   matrixScale(1, 3, &scaled_omegaI, &error_roll_pitch, flight_angle->ki_roll_pitch * accel_weight);
-  //printmatrix(&scaled_omegaI,'s');
   matrixAdd(1, 3, &flight_angle->omegaI, &flight_angle->omegaI, &scaled_omegaI);
 
   flight_angle->omegaP[YAW] = 0.0;
