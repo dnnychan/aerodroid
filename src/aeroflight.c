@@ -34,7 +34,7 @@
 
 #include "aeroflight.h"
 
-int throttle=1500;
+int throttle=1000;
 
 int _setThrottle(uint8_t * args)
 {
@@ -55,7 +55,6 @@ MOTORS_TYPE* motorsInit(void) {
   for (i=0; i<LASTMOTOR; i++) {
     motors->min_command[i]=MINCOMMAND;
     motors->motor_command[i]=MINCOMMAND;
-    //motors->motor_command[i]=MAXCOMMAND;
     motors->max_command[i]=MAXCOMMAND;
   }
   return motors;
@@ -92,29 +91,34 @@ void writeMotors(MOTORS_TYPE* motors) {
   PWM_MatchUpdate(LPC_PWM1, LEFT+1,  (uint32_t)getMotorCommand(motors, LEFT),  PWM_MATCH_UPDATE_NEXT_RST);
 }
 
-void calculateFlightError(MOTORS_TYPE* motors, FLIGHT_ANGLE_TYPE* flight_angle, tS_pid_Coeff* PID[10], VECTOR gyro_data) {
+void calculateFlightError(MOTORS_TYPE* motors, FLIGHT_ANGLE_TYPE* flight_angle, PID_TYPE* PID[10], VECTOR gyro_data) {
   //float rollAttitudeCmd = updatePID((receiver.getData(ROLL) - receiver.getZero(ROLL)) * ATTITUDE_SCALING, flightAngle->getData(ROLL), &PID[LEVELROLL]);
   //float pitchAttitudeCmd = updatePID((receiver.getData(PITCH) - receiver.getZero(PITCH)) * ATTITUDE_SCALING, -flightAngle->getData(PITCH), &PID[LEVELPITCH]);
   //motors.setMotorAxisCommand(ROLL, updatePID(rollAttitudeCmd, gyro.getData(ROLL), &PID[LEVELGYROROLL]));
   //motors.setMotorAxisCommand(PITCH, updatePID(pitchAttitudeCmd, -gyro.getData(PITCH), &PID[LEVELGYROPITCH]));
-  float roll_altitude_cmd  = vF_dspl_pid((int)(getAngle(flight_angle, ROLL)*1000),  PID[LEVELROLL])  / 100.0/1000.0;
-  float pitch_altitude_cmd = vF_dspl_pid((int)(getAngle(flight_angle, PITCH)*1000), PID[LEVELPITCH]) / 100.0/1000.0;
+  
+  float roll_altitude_cmd  = doPID( 0,  getAngle(flight_angle, ROLL),  PID[LEVELROLL]);
+  float pitch_altitude_cmd = doPID( 0, -getAngle(flight_angle, PITCH), PID[LEVELPITCH]);
+  
+  dummy_roll_altitude_cmd = roll_altitude_cmd;
+  dummy_pitch_altitude_cmd = pitch_altitude_cmd;
+  dummy_gyro_y = gyro_data.y;
+  dummy_gyro_x = -gyro_data.x;
 
-  //sprintf((char *) str, "altitude cmd: [%i, %i]\r\n",(int)(roll_altitude_cmd*1000), (int)(pitch_altitude_cmd*1000));
-  //writeUSBOutString(str);
-
-  //sprintf((char *) str, "gyro data: [%i, %i]\r\n",(int)(gyro_data.y*1000), (int)(-gyro_data.x*1000));
-  //writeUSBOutString(str);
-
-  setMotorAxisCommand(motors, ROLL,  vF_dspl_pid((int)(( roll_altitude_cmd - (gyro_data.y)) * 100), PID[LEVELGYROROLL])  / 1.0 / 100.0);
-  setMotorAxisCommand(motors, PITCH, vF_dspl_pid((int)((pitch_altitude_cmd + (-gyro_data.x)) * 100), PID[LEVELGYROPITCH]) / 1.0 / 100.0);
-
-  //sprintf((char *) str, "axis command: [%i, %i, %i]\r\n", (int)(getMotorAxisCommand(motors,ROLL)), (int)(getMotorAxisCommand(motors,PITCH)),(int)(getMotorAxisCommand(motors,YAW)));
-  //writeUSBOutString(str);
-
+  setMotorAxisCommand(motors, ROLL,  doPID( roll_altitude_cmd,  gyro_data.y, PID[LEVELGYROROLL]));
+  setMotorAxisCommand(motors, PITCH, doPID(pitch_altitude_cmd, +gyro_data.x, PID[LEVELGYROPITCH]));
 }
 
-void processFlightControl(MOTORS_TYPE* motors, FLIGHT_ANGLE_TYPE* flight_angle, tS_pid_Coeff* PID[10], VECTOR gyro_data)
+int _getFlightCmds (uint8_t * args)
+{
+  sprintf((char *) str, "%x %x %x %x\r\n",(int)(dummy_gyro_y*1000), (int)(dummy_gyro_x*1000), (int)(dummy_roll_altitude_cmd*1000), (int)(dummy_pitch_altitude_cmd*1000));
+  writeUSBOutString(str);
+  
+  return 0;
+  
+}
+
+void processFlightControl(MOTORS_TYPE* motors, FLIGHT_ANGLE_TYPE* flight_angle, PID_TYPE* PID[10], VECTOR gyro_data)
 {
   int motor;
 

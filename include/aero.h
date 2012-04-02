@@ -55,8 +55,8 @@
 #define RIGHT 1
 #define REAR 2
 #define LEFT 3
-#define MINCOMMAND 1250
-#define MAXCOMMAND 1750
+#define MINCOMMAND 1000
+#define MAXCOMMAND 2000
 #define LASTMOTOR 4
 
 #define ACCEL_X_LOW 0x28

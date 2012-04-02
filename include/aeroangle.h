@@ -61,7 +61,6 @@ typedef struct {
 
 FLIGHT_ANGLE_TYPE* flightAngleInitialize(float hdgX, float hdgY);
 float getAngle(FLIGHT_ANGLE_TYPE* flight_angle, uint8_t axis);
-void printstuff(FLIGHT_ANGLE_TYPE* flight_angle);
 void flightAngleCalculate(FLIGHT_ANGLE_TYPE* flight_angle, \
     float rollRate,           float pitchRate,     float yawRate, \
     float longitudinalAccel,  float lateralAccel,  float verticalAccel, \

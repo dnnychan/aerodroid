@@ -77,18 +77,18 @@ FLIGHT_ANGLE_TYPE* flightAngleInitialize(float hdgX, float hdgY)
 //    flight_angle.kiYaw = -0.005;
 
     // released in 2.2
-  flight_angle->kp_roll_pitch = 1.0;
-  flight_angle->ki_roll_pitch = 0.002;
+  //flight_angle->kp_roll_pitch = 1.0;
+  //flight_angle->ki_roll_pitch = 0.002;
 
 
-  //flight_angle->kp_roll_pitch = 0.1;        // alternate 0.05;
-  //flight_angle->ki_roll_pitch = 0.0002;     // alternate 0.0001;
+  flight_angle->kp_roll_pitch = 0.1;        // alternate 0.05;
+  flight_angle->ki_roll_pitch = 0.0002;     // alternate 0.0001;
 
-  flight_angle->kp_yaw = -1.0;
-  flight_angle->ki_yaw = -0.002;
+  //flight_angle->kp_yaw = -1.0;
+ //flight_angle->ki_yaw = -0.002;
 
-//    flight_angle.kpYaw = -0.1;             // alternate -0.05;
-//    flight_angle.kiYaw = -0.0002;          // alternate -0.0001;
+  flight_angle->kp_yaw = -0.1;             // alternate -0.05;
+  flight_angle->ki_yaw = -0.0002;          // alternate -0.0001;
 
   flight_angle->delta_t = 0.02;
   return flight_angle;
@@ -97,14 +97,6 @@ FLIGHT_ANGLE_TYPE* flightAngleInitialize(float hdgX, float hdgY)
 float getAngle(FLIGHT_ANGLE_TYPE* flight_angle, uint8_t axis)
 {
   return flight_angle->angle[axis];//*180/3.14159;
-}
-
-void printstuff(FLIGHT_ANGLE_TYPE* flight_angle)
-{
-  //sprintf((char *) str, "dcm=[%i,%i,%i\r\n  %i,%i,%i\r\n  %i,%i,%i]\r\n", (int)(flight_angle->dcm_matrix[0]*1000), (int)(flight_angle->dcm_matrix[1]*1000), (int)(flight_angle->dcm_matrix[2]*1000), (int)(flight_angle->dcm_matrix[3]*1000), (int)(flight_angle->dcm_matrix[4]*1000), (int)(flight_angle->dcm_matrix[5]*1000), (int)(flight_angle->dcm_matrix[6]*1000), (int)(flight_angle->dcm_matrix[7]*1000), (int)(flight_angle->dcm_matrix[8]*1000));
-  //writeUSBOutString(str);
-  sprintf((char *) str, "angles=[%i, %i, %i]\r\n",(int)(flight_angle->angle[ROLL]*180/3.14159), (int)(flight_angle->angle[PITCH]*180/3.14159), (int)(flight_angle->angle[YAW]*180/3.14159));
-  writeUSBOutString(str);
 }
 
 void matrixUpdate (FLIGHT_ANGLE_TYPE* flight_angle, float rollRate, float pitchRate, float yawRate)
@@ -127,7 +119,7 @@ void matrixUpdate (FLIGHT_ANGLE_TYPE* flight_angle, float rollRate, float pitchR
   update_matrix[4] = 0;
   update_matrix[5] = -flight_angle->delta_t * flight_angle->corrected_rate_vector[ROLL];   // -p
   update_matrix[6] = -flight_angle->delta_t * flight_angle->corrected_rate_vector[PITCH];  // -q
-  update_matrix[7] =  flight_angle->delta_t * flight_angle->corrected_rate_vector[ROLL];
+  update_matrix[7] =  flight_angle->delta_t * flight_angle->corrected_rate_vector[ROLL];   //  p
   update_matrix[8] = 0;
 
   matrixMultiply(3 ,3 ,3, &product_matrix, &flight_angle->dcm_matrix, &update_matrix);
@@ -201,7 +193,6 @@ void driftCorrection(FLIGHT_ANGLE_TYPE* flight_angle, float ax, float ay, float 
     accel_weight = 0.0;*/
   accel_weight=1;
 
-
   vectorCrossProduct(&error_roll_pitch, &accel_vector, &flight_angle->dcm_matrix[6]);
   matrixScale(1, 3, &flight_angle->omegaP, &error_roll_pitch, flight_angle->kp_roll_pitch * accel_weight);
 
@@ -221,7 +212,17 @@ void eulerAngles(FLIGHT_ANGLE_TYPE* flight_angle)
 
 void earthAxisAccels(FLIGHT_ANGLE_TYPE* flight_angle, float ax, float ay, float az, float oneG)
 {
-
+  
+  /*float accelVector[3];
+  
+  accelVector[XAXIS] = ax;
+  accelVector[YAXIS] = ay;
+  accelVector[ZAXIS] = az;
+  
+  earthAccel[XAXIS] = vectorDotProduct(3, &dcmMatrix[0], &accelVector[0]);
+  earthAccel[YAXIS] = vectorDotProduct(3, &dcmMatrix[3], &accelVector[0]);
+  earthAccel[ZAXIS] = vectorDotProduct(3, &dcmMatrix[6], &accelVector[0]) + oneG;*/
+  
 }
 
 void flightAngleCalculate(FLIGHT_ANGLE_TYPE* flight_angle,

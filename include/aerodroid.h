@@ -57,7 +57,9 @@ uint8_t* gyro_raw;
 
 VECTOR accel_data, gyro_data;
 
-tS_pid_Coeff* PID[10];
+int safety_counter;
+
+PID_TYPE* PID[10];
 FLIGHT_ANGLE_TYPE* flight_angle;
 MOTORS_TYPE* motors;
 
@@ -66,10 +68,21 @@ void writeReg(I2C_M_SETUP_Type* device,uint8_t reg, uint32_t value);
 uint8_t* read6Reg(I2C_M_SETUP_Type* device,uint8_t reg, uint8_t* rx_data6);
 int aeroInit(uint8_t * args);
 void aeroLoop(uint8_t * args);
+void aeroLoopOff(void);
 int _aeroLoopOff(uint8_t * args);
 int _aeroLoopOn(uint8_t * args);
 int _getMotorCommands(uint8_t* args);
-void stopAllMotors(void);
+int _getFlightAngles(uint8_t* args);
+int _getGyroReadings(uint8_t * args);
+int _getAccelReadings(uint8_t * args);
+int _maintainConnection(uint8_t * args);
+int stopAllMotors(uint8_t * args);
+int _setLevelPitchPID (uint8_t * args);
+int _setLevelRollPID (uint8_t * args);
+int _setLevelGyroPitchPID (uint8_t * args);
+int _setLevelGyroRollPID (uint8_t * args);
+int _armMotors(uint8_t * args);
+int _setAngleLimit(uint8_t * args);
 
 #endif
 

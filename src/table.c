@@ -1289,7 +1289,19 @@ const _nxp_function driver_table[] = {
     {(uint8_t *) "aeroLoopOff", _aeroLoopOff},
     {(uint8_t *) "setThrottle", _setThrottle},
     {(uint8_t *) "getMotorCommands", _getMotorCommands},
-
+    {(uint8_t *) "getFlightAngles", _getFlightAngles},
+    {(uint8_t *) "getAccelReadings", _getAccelReadings},
+    {(uint8_t *) "getGyroReadings", _getGyroReadings},
+    {(uint8_t *) "setLevelRollPID", _setLevelRollPID},
+    {(uint8_t *) "setLevelPitchPID", _setLevelPitchPID},
+    {(uint8_t *) "setLevelGyroRollPID", _setLevelGyroRollPID},
+    {(uint8_t *) "setLevelGyroPitchPID", _setLevelGyroPitchPID},
+    {(uint8_t *) "getFlightCmds", _getFlightCmds},
+    {(uint8_t *) "maintainConnection", _maintainConnection},
+    {(uint8_t *) "stopAllMotors", stopAllMotors},
+    {(uint8_t *) "armMotors", _armMotors}, 
+    {(uint8_t *) "setAngleLimit", _setAngleLimit},
+    
 };
 
 int driver_table_len = sizeof(driver_table)/sizeof(_nxp_function);

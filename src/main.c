@@ -45,6 +45,7 @@
 
 void SysTickHandler(void);
 extern int aeroLoop_on;
+extern int safety_counter;
 //FunctionalState Cur_State = ENABLE;
 
 /*****************************************************************************
@@ -75,30 +76,31 @@ void IntHandler(void)
     writeUSBOutString(int_str);
 }
 
-/*********************************************************************//**
- * @brief 		SysTick interrupt handler
- * @param		None
- * @return 		None
+/*********************************************************************
+
+        SysTick interrupt handler
+
  ***********************************************************************/
 void SysTickHandler(void)
 {
 	//Clear System Tick counter flag
 	SYSTICK_ClearCounterFlag();
+  
+  safety_counter--;
+  
+  if (safety_counter < 5) //starts at 10
+  {
+    aeroLoopOff();
+    heartbeat_on=1;
+  }
 
   if (aeroLoop_on)
     aeroLoop(0);
-	//toggle P0.0
-	/*if (Cur_State == ENABLE)
-	{
-		//pull-down pin
-		GPIO_ClearValue(3, (1 << 25));
-		Cur_State = DISABLE;
-	}
-	else
-	{
-		GPIO_SetValue(3, (1 << 25));
-		Cur_State = ENABLE;
-	}*/
+  else
+  {
+    stopAllMotors(0);
+    aeroLoopOff();
+  }
 }
 
 /*****************************************************************************
@@ -132,11 +134,11 @@ void PWMInit(void)
     PWMMatchInit(0, 20000);
     for (i=2; i<6; i++)
     {
-      PWMMatchInit(i, 1250);
+      PWMMatchInit(i, 1000);
       PWM_ChannelCmd(LPC_PWM1, i, ENABLE);
     }
 
-    PWMMatchInit(1, 1250);
+    PWMMatchInit(1, 1000);
     PWM_ChannelCmd(LPC_PWM1, 1, ENABLE);
     PWM_ResetCounter(LPC_PWM1);
     PWM_CounterCmd(LPC_PWM1, ENABLE);

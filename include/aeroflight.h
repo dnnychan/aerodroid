@@ -41,11 +41,18 @@
 
 #include "return.h"
 #include "cr_dsplib.h"
+#include "PID.h"
 
 #include "aeroangle.h"
 #include "aero.h"
 
+float dummy_roll_altitude_cmd;
+float dummy_pitch_altitude_cmd;
+float dummy_gyro_y;
+float dummy_gyro_x;
+
 int _setThrottle(uint8_t * args);
+int _getFlightCmds (uint8_t * args);
 
 //Motor related commands
 typedef struct {
@@ -63,6 +70,6 @@ const int getMotorCommand(MOTORS_TYPE*motors, int motor);
 void writeMotors(MOTORS_TYPE* motors);
 
 //Flight commands
-void processFlightControl(MOTORS_TYPE* motors, FLIGHT_ANGLE_TYPE* flight_angle, tS_pid_Coeff* PID[10], VECTOR gyro_data);
+void processFlightControl(MOTORS_TYPE* motors, FLIGHT_ANGLE_TYPE* flight_angle, PID_TYPE* PID[10], VECTOR gyro_data);
 
 #endif
