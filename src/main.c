@@ -91,7 +91,7 @@ void SysTickHandler(void)
   if (safety_counter < 5) //starts at 10
   {
     aeroLoopOff();
-    heartbeat_on=1;
+    GPIO_ClearValue(3, (1 << 25));
   }
 
   if (aeroLoop_on)

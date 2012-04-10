@@ -306,8 +306,8 @@ int _aeroLoopOff(uint8_t * args)
 {
   aeroLoopOff();
   
-  sprintf((char *) str, "%x\r\n",(int)(1));
-  writeUSBOutString(str);
+  //~ sprintf((char *) str, "%x\r\n",(int)(1));
+  //~ writeUSBOutString(str);
 
   return 0;
 }
