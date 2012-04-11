@@ -53,6 +53,7 @@ int _free(uint8_t * args);
 int _deref(uint8_t * args);
 int _roboveroConfig(uint8_t * args);
 int _resetConfig(uint8_t * args);
+void delay (uint32_t interval);
 
 #endif
 

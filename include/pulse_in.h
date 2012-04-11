@@ -3,11 +3,11 @@
  * @purpose        
  * @version        0.1
  *------------------------------------------------------------------------------
- * Copyright (C) 2011 Gumstix Inc.
+ * Copyright (C) 2012 Gumstix Inc.
  * All rights reserved.
  *
  * Contributer(s):
- *   Neil MacMunn   <neil@gumstix.com>
+ *   Danny Chan   <danny@gumstix.com>
  *------------------------------------------------------------------------------
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -32,47 +32,13 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  ******************************************************************************/
 
-#ifndef __TABLE_H__
-#define __TABLE_H__
+#ifndef __PULSEIN_H__
+#define __PULSEIN_H__
 
-#include "extras.h"
-#include "_lpc17xx_pwm.h"
-#include "_lpc17xx_spi.h"
-#include "_lpc17xx_rtc.h"
-#include "_lpc17xx_rit.h"
-#include "_lpc17xx_ssp.h"
-#include "_lpc17xx_i2c.h"
-#include "_lpc17xx_can.h"
-#include "_lpc17xx_exti.h"
-#include "_lpc17xx_systick.h"
-#include "_debug_frmwrk.h"
-#include "_lpc17xx_i2s.h"
-#include "_lpc17xx_emac.h"
-#include "_lpc17xx_adc.h"
-#include "_lpc17xx_mcpwm.h"
-#include "_lpc17xx_clkpwr.h"
-#include "_lpc17xx_dac.h"
-#include "_lpc17xx_wdt.h"
-#include "_lpc17xx_libcfg.h"
-#include "_lpc17xx_timer.h"
-#include "_lpc17xx_gpdma.h"
-#include "_lpc17xx_qei.h"
-#include "_lpc17xx_uart.h"
-#include "_lpc17xx_gpio.h"
-#include "_lpc17xx_pinsel.h"
-#include "_lpc17xx_nvic.h"
-#include "_LPC17xx.h"
-#include "_core.h"
-#include "_cr_dsplib.h"
-#include "pulse_in.h"
+#include "lpc_types.h"
 
-typedef struct {
-        uint8_t * fcn_name;
-        int (*fcn_ptr)(uint8_t *);
-} _nxp_function;
-
-extern const _nxp_function driver_table[];
-extern int driver_table_len;
+int pulseIn (uint8_t echo_port, uint32_t echo_pin, uint8_t trig_port, uint32_t trig_pin, uint32_t trig_pulse);
+int _pulseIn (uint8_t * args);
 
 #endif
 

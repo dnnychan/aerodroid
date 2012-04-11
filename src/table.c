@@ -1283,6 +1283,7 @@ const _nxp_function driver_table[] = {
     {(uint8_t *) "tS_pid_Coeff_Kd", _tS_pid_Coeff_Kd},
     {(uint8_t *) "tS_pid_Coeff_IntegratedError", _tS_pid_Coeff_IntegratedError},
     {(uint8_t *) "tS_pid_Coeff_LastError", _tS_pid_Coeff_LastError},
+    {(uint8_t *) "pulseIn", _pulseIn},
 
 };
 
