@@ -3,11 +3,11 @@
  * @purpose        
  * @version        0.1
  *------------------------------------------------------------------------------
- * Copyright (C) 2011 Gumstix Inc.
+ * Copyright (C) 2012 Gumstix Inc.
  * All rights reserved.
  *
  * Contributer(s):
- *   Neil MacMunn   <neil@gumstix.com>
+ *   Danny Chan   <danny@gumstix.com>
  *------------------------------------------------------------------------------
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -32,28 +32,13 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  ******************************************************************************/
 
-#ifndef __EXTRAS_H__
-#define __EXTRAS_H__
+#ifndef __PULSEIN_H__
+#define __PULSEIN_H__
 
 #include "lpc_types.h"
 
-extern int prompt_on;
-extern int heartbeat_on;
-
-int _return(uint8_t * args);
-int _search(uint8_t * args);
-int _list(uint8_t * args);
-int _promptOn(uint8_t * args);
-int _promptOff(uint8_t * args);
-int _heartbeatOn(uint8_t * args);
-int _heartbeatOff(uint8_t * args);
-int _initMatch(uint8_t * args);
-int _malloc(uint8_t * args);
-int _free(uint8_t * args);
-int _deref(uint8_t * args);
-int _roboveroConfig(uint8_t * args);
-int _resetConfig(uint8_t * args);
-void delay (uint32_t interval);
+int pulseIn (uint8_t echo_port, uint32_t echo_pin, uint8_t trig_port, uint32_t trig_pin, uint32_t trig_pulse);
+int _pulseIn (uint8_t * args);
 
 #endif
 

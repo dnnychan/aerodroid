@@ -35,6 +35,7 @@
 #include "aeroflight.h"
 
 int throttle=1000;
+int target_altitude = 15;
 
 int _setThrottle(uint8_t * args)
 {
@@ -43,6 +44,16 @@ int _setThrottle(uint8_t * args)
   if ((arg_ptr = (uint8_t *) strtok(NULL, " ")) == NULL) return 1;
   throttle = (int) strtoul((char *) arg_ptr, NULL, 16);
   
+  return 0;
+}
+
+int _setTargetAltitude (uint8_t * args)
+{
+  uint8_t * arg_ptr;
+
+  if ((arg_ptr = (uint8_t *) strtok(NULL, " ")) == NULL) return 1;
+  target_altitude = (int) strtoul((char *) arg_ptr, NULL, 16);
+    
   return 0;
 }
 
@@ -109,16 +120,22 @@ void calculateFlightError(MOTORS_TYPE* motors, FLIGHT_ANGLE_TYPE* flight_angle, 
   setMotorAxisCommand(motors, PITCH, doPID(pitch_altitude_cmd, +gyro_data.x, PID[LEVELGYROPITCH]));
 }
 
+void processAltitudeControl(uint32_t altitude_data, PID_TYPE* PID[10]) 
+{
+  int throttle_adjust = doPID(target_altitude, altitude_data, PID[ALTITUDE]);
+  
+  throttle = throttle + throttle_adjust;
+}
+
 int _getFlightCmds (uint8_t * args)
 {
   sprintf((char *) str, "%x %x %x %x\r\n",(int)(dummy_gyro_y*1000), (int)(dummy_gyro_x*1000), (int)(dummy_roll_altitude_cmd*1000), (int)(dummy_pitch_altitude_cmd*1000));
   writeUSBOutString(str);
   
   return 0;
-  
 }
 
-void processFlightControl(MOTORS_TYPE* motors, FLIGHT_ANGLE_TYPE* flight_angle, PID_TYPE* PID[10], VECTOR gyro_data)
+void processFlightControl(MOTORS_TYPE* motors, FLIGHT_ANGLE_TYPE* flight_angle, PID_TYPE* PID[10], VECTOR gyro_data, uint32_t altitude_data, int altitude_control)
 {
   int motor;
 
@@ -127,6 +144,8 @@ void processFlightControl(MOTORS_TYPE* motors, FLIGHT_ANGLE_TYPE* flight_angle, 
   //do some yaw thing
 
   //altitude
+  if (altitude_control)
+    processAltitudeControl(altitude_data, PID);
 
   // Plus mode
   setMotorCommand(motors, FRONT, throttle - getMotorAxisCommand(motors, PITCH) - getMotorAxisCommand(motors, YAW));

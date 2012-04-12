@@ -39,8 +39,9 @@
 #include "aerodroid.h"
 
 int aeroLoop_on = FALSE;
-int armed = 0;
 float angle_limit = .175;   // 10 degrees
+uint32_t altitude_data;
+int altitude_control;
 
 void aeroPIDValuesInit(PID_TYPE* PID[10])
 {
@@ -100,6 +101,13 @@ void aeroPIDValuesInit(PID_TYPE* PID[10])
   PID[LEVELGYROPITCH]->IntegratedError = 0;
   PID[LEVELGYROPITCH]->LastError = 0;
   PID[LEVELGYROPITCH]->IMax = 250;
+  
+  PID[ALTITUDE]->Kp = .4;
+  PID[ALTITUDE]->Ki = 0.02;
+  PID[ALTITUDE]->Kd = 0;
+  PID[ALTITUDE]->IntegratedError = 0;
+  PID[ALTITUDE]->LastError = 0;
+  PID[ALTITUDE]->IMax = 250;
 }
 
 int _setLevelRollPID (uint8_t * args)
@@ -186,6 +194,43 @@ int _setLevelGyroPitchPID (uint8_t * args)
   return 0;
 }
 
+int _setAltitudePID (uint8_t * args)
+{
+  uint8_t * arg_ptr;
+  int P, I, D;
+
+	if ((arg_ptr = (uint8_t *) strtok(NULL, " ")) == NULL) return 1;
+	P = (int) strtoul((char *) arg_ptr, NULL, 16);
+	if ((arg_ptr = (uint8_t *) strtok(NULL, " ")) == NULL) return 1;
+	I = (int) strtoul((char *) arg_ptr, NULL, 16);
+	if ((arg_ptr = (uint8_t *) strtok(NULL, " ")) == NULL) return 1;
+	D = (int) strtoul((char *) arg_ptr, NULL, 16);
+  
+  PID[ALTITUDE]->Kp = P/1000.0;
+  PID[ALTITUDE]->Ki = I/1000.0;
+  PID[ALTITUDE]->Kd = D/1000.0;
+  PID[ALTITUDE]->IntegratedError = 0;
+  PID[ALTITUDE]->LastError = 0;
+  
+  return 0;
+}
+
+int _toggleAltitudeControl (uint8_t * args)
+{
+  uint8_t * arg_ptr;
+  int toggle;
+
+	if ((arg_ptr = (uint8_t *) strtok(NULL, " ")) == NULL) return 1;
+	toggle = (int) strtoul((char *) arg_ptr, NULL, 16);
+  
+  if (toggle)
+    altitude_control = TRUE;
+  else
+    altitude_control = FALSE;
+  
+  return 0;
+}
+
 int twosComplement(uint8_t low_byte, uint8_t high_byte)
 {
   return ((int)((low_byte + (high_byte << 8)) + pow(2,15)) % (int)pow(2,16) - pow(2,15));
@@ -214,6 +259,8 @@ uint8_t* read6Reg(I2C_M_SETUP_Type* device,uint8_t reg, uint8_t* rx_data6)
 int aeroInit(uint8_t * args)
 {
   int i;
+  
+  altitude_control = TRUE;
 
   uint8_t accel_ctrl_reg1 = 0x20;
   uint8_t accel_ctrl_reg4 = 0x23;
@@ -236,7 +283,7 @@ int aeroInit(uint8_t * args)
   accelerometer->retransmissions_max=3;
 
   writeReg(accelerometer,accel_ctrl_reg1,0x2F);
-  writeReg(accelerometer,accel_ctrl_reg4, 0x00);
+  writeReg(accelerometer,accel_ctrl_reg4, 0x30); // +/- 8g
 
   gyro->sl_addr7bit=0x68;
   gyro->tx_data=gyro_tx_data;
@@ -254,6 +301,9 @@ int aeroInit(uint8_t * args)
 
   aeroPIDValuesInit(PID);
   
+  GPIO_SetDir(0, (1 << 4), 1);
+  GPIO_SetDir(0, (1 << 5), 0);
+  
   flight_angle = flightAngleInitialize(1.0, 0.0);
   motors = motorsInit();
   writeMotors(motors);
@@ -267,8 +317,6 @@ int stopAllMotors(uint8_t * args)
   setMotorCommand(motors,RIGHT,MINCOMMAND);
   setMotorCommand(motors,REAR,MINCOMMAND);
   setMotorCommand(motors,LEFT,MINCOMMAND);
-  
-  armed = 0;
   
   writeMotors(motors);
   
@@ -309,13 +357,6 @@ int _aeroLoopOff(uint8_t * args)
   //~ sprintf((char *) str, "%x\r\n",(int)(1));
   //~ writeUSBOutString(str);
 
-  return 0;
-}
-
-int _armMotors(uint8_t * args)
-{
-  armed = 1;
-  
   return 0;
 }
 
@@ -374,6 +415,14 @@ int _getAccelReadings(uint8_t * args)
   return 0;
 }
 
+int _getAltitudeReadings(uint8_t * args)
+{
+  sprintf((char *) str, "%x \r\n",(int) altitude_data);
+  writeUSBOutString(str);
+  
+  return 0;
+}
+
 int _setAngleLimit(uint8_t * args)
 {
   uint8_t * arg_ptr;
@@ -391,23 +440,28 @@ void aeroLoop(uint8_t * args)
 {  
   accel_raw=read6Reg(accelerometer, ACCEL_X_LOW, accel_raw);
   gyro_raw=read6Reg(gyro, GYRO_X_LOW, gyro_raw);
+  
+  //417 for 8g, 1671 for 2g
+  accel_data.x=twosComplement(accel_raw[0], accel_raw[1])/417.95; // /1671.8;
+  accel_data.y=twosComplement(accel_raw[2], accel_raw[3])/417.95; // /1671.8;
+  accel_data.z=twosComplement(accel_raw[4], accel_raw[5])/417.95; // /1671.8;
 
-  accel_data.x=twosComplement(accel_raw[0], accel_raw[1])/1671.8;
-  accel_data.y=twosComplement(accel_raw[2], accel_raw[3])/1671.8;
-  accel_data.z=twosComplement(accel_raw[4], accel_raw[5])/1671.8;
-
-  gyro_data.x=twosComplement(gyro_raw[0], gyro_raw[1])/3754.956;  //radians //131.072; //degrees
-  gyro_data.y=twosComplement(gyro_raw[2], gyro_raw[3])/3754.956;  //radians //131.072; //degrees
-  gyro_data.z=twosComplement(gyro_raw[4], gyro_raw[5])/3754.956;  //radians //131.072; //degrees
+  gyro_data.x=(twosComplement(gyro_raw[0], gyro_raw[1])+36)/3754.956;  //radians //131.072; //degrees
+  gyro_data.y=(twosComplement(gyro_raw[2], gyro_raw[3])-3)/3754.956;  //radians //131.072; //degrees
+  gyro_data.z=(twosComplement(gyro_raw[4], gyro_raw[5])+85)/3754.956;  //radians //131.072; //degrees
 
   //flightAngleCalculate(flight_angle, gyro_data.x, gyro_data.y, gyro_data.z, accel_data.x, accel_data.y, accel_data.z, ACCEL_ONEG, 1, 0);
   flightAngleCalculate(flight_angle, gyro_data.y, -gyro_data.x, gyro_data.z, accel_data.x, accel_data.y, accel_data.z, ACCEL_ONEG, 1, 0);
-
-  processFlightControl(motors, flight_angle, PID, gyro_data);
+  
+  if (altitude_control)
+    altitude_data = pulseIn(0, (1 << 5), 0, (1 << 4), 9850)/58;
+  
+  processFlightControl(motors, flight_angle, PID, gyro_data, altitude_data, altitude_control);
   
   if ((flight_angle->angle[ROLL] > angle_limit) || (flight_angle->angle[ROLL] < -angle_limit) || (flight_angle->angle[PITCH] > angle_limit) || (flight_angle->angle[PITCH] < -angle_limit))
   {
     aeroLoopOff();
+    GPIO_ClearValue(3, (1 << 25));
   }
   else
     writeMotors(motors);

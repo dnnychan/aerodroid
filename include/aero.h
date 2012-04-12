@@ -61,7 +61,9 @@
 
 #define ACCEL_X_LOW 0x28
 #define GYRO_X_LOW 0x28
-#define ACCEL_ONEG 9.81
+#define ACCEL_ONEG 10.1
+
+#define DT 0.02
 
 typedef struct {
   float x, y, z;

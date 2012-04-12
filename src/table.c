@@ -1299,8 +1299,13 @@ const _nxp_function driver_table[] = {
     {(uint8_t *) "getFlightCmds", _getFlightCmds},
     {(uint8_t *) "maintainConnection", _maintainConnection},
     {(uint8_t *) "stopAllMotors", stopAllMotors},
-    {(uint8_t *) "armMotors", _armMotors}, 
     {(uint8_t *) "setAngleLimit", _setAngleLimit},
+    {(uint8_t *) "pulseIn", _pulseIn},
+    {(uint8_t *) "setAltitudePID", _setAltitudePID},
+    {(uint8_t *) "toggleAltitudeControl", _toggleAltitudeControl},
+    {(uint8_t *) "setTargetAltitude", _setTargetAltitude},
+    {(uint8_t *) "getAltitudeReadings", _getAltitudeReadings},
+    {(uint8_t *) "changeMew", _changeMew},
     
 };
 

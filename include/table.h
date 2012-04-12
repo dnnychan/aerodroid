@@ -66,6 +66,8 @@
 #include "_cr_dsplib.h"
 #include "aerodroid.h"
 #include "aeroflight.h"
+#include "aeroangle.h"
+#include "pulse_in.h"
 
 typedef struct {
         uint8_t * fcn_name;

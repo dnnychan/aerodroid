@@ -38,10 +38,22 @@
 #include "table.h"
 #include "return.h"
 
-void printmatrix(float * matrix, char hi)
+float roll_angle = 0;
+float pitch_angle = 0;
+float yaw_angle = 0;
+
+float roll_acc, pitch_acc;
+
+float mew=0.03;
+
+int _changeMew (uint8_t * args)
 {
-  sprintf((char *) str, "%c=[%i, %i, %i]\r\n",hi,(int)(matrix[0]*1000000), (int)(matrix[1]*1000000), (int)(matrix[2]*1000000));
-  writeUSBOutString(str);
+  uint8_t * arg_ptr;
+
+	if ((arg_ptr = (uint8_t *) strtok(NULL, " ")) == NULL) return 1;
+	mew = (float) strtoul((char *) arg_ptr, NULL, 16) / 1000.0;
+  
+  return 0;
 }
 
 FLIGHT_ANGLE_TYPE* flightAngleInitialize(float hdgX, float hdgY)
@@ -230,9 +242,21 @@ void flightAngleCalculate(FLIGHT_ANGLE_TYPE* flight_angle,
          float longitudinalAccel,   float lateralAccel,   float verticalAccel, \
          float oneG,                float magX,           float magY)
 {
-  matrixUpdate(flight_angle, rollRate, pitchRate, yawRate);
-  normalize(flight_angle);
-  driftCorrection(flight_angle, longitudinalAccel, lateralAccel, verticalAccel, oneG, magX, magY);
-  eulerAngles(flight_angle);
+  //~ matrixUpdate(flight_angle, rollRate, pitchRate, yawRate);
+  //~ normalize(flight_angle);
+  //~ driftCorrection(flight_angle, longitudinalAccel, lateralAccel, verticalAccel, oneG, magX, magY);
+  //~ eulerAngles(flight_angle);
   //earthAxisAccels(flight_angle, longitudinalAccel, lateralAccel, verticalAccel, oneG);
+  
+  // BALANCE FILTER:
+  roll_acc = -asin(lateralAccel/ACCEL_ONEG);
+  pitch_acc = asin(longitudinalAccel/ACCEL_ONEG);
+  
+  roll_angle = (1.0 - mew) * (roll_angle + rollRate * DT) + mew * roll_acc;
+  pitch_angle = (1.0 - mew) * (pitch_angle + pitchRate * DT) + mew * pitch_acc;
+  yaw_angle = yaw_angle + yawRate * DT;
+  
+  flight_angle->angle[ROLL] = roll_angle;
+  flight_angle->angle[PITCH] = pitch_angle;
+  flight_angle->angle[YAW] = yaw_angle;
 }

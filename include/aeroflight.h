@@ -53,6 +53,7 @@ float dummy_gyro_x;
 
 int _setThrottle(uint8_t * args);
 int _getFlightCmds (uint8_t * args);
+int _setTargetAltitude (uint8_t * args);
 
 //Motor related commands
 typedef struct {
@@ -70,6 +71,6 @@ const int getMotorCommand(MOTORS_TYPE*motors, int motor);
 void writeMotors(MOTORS_TYPE* motors);
 
 //Flight commands
-void processFlightControl(MOTORS_TYPE* motors, FLIGHT_ANGLE_TYPE* flight_angle, PID_TYPE* PID[10], VECTOR gyro_data);
+void processFlightControl(MOTORS_TYPE* motors, FLIGHT_ANGLE_TYPE* flight_angle, PID_TYPE* PID[10], VECTOR gyro_data, uint32_t altitude, int altitude_control);
 
 #endif

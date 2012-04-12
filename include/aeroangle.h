@@ -59,6 +59,8 @@ typedef struct {
   float delta_t
 } FLIGHT_ANGLE_TYPE;
 
+int _changeMew (uint8_t * args);
+
 FLIGHT_ANGLE_TYPE* flightAngleInitialize(float hdgX, float hdgY);
 float getAngle(FLIGHT_ANGLE_TYPE* flight_angle, uint8_t axis);
 void flightAngleCalculate(FLIGHT_ANGLE_TYPE* flight_angle, \

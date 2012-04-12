@@ -472,4 +472,19 @@ int _resetConfig(uint8_t * args)
     return 0;
 }
 
+#define CAL_FACTOR 120
 
+void delay (uint32_t interval)
+// microsecond delay
+{
+  uint32_t iterations = interval / CAL_FACTOR;
+  int i;
+
+  for(i=0; i<iterations; ++i)
+  {
+    asm(
+      "nop\n\t"
+      "nop\n\t"
+    );
+  }
+}

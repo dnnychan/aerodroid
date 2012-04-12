@@ -37,6 +37,7 @@
 
 #include "lpc_types.h"
 #include "lpc17xx_i2c.h"
+#include "lpc17xx_gpio.h"
 #include "LPC17xx.h"
 
 #include <math.h>
@@ -48,6 +49,8 @@
 #include "aero.h"
 #include "aeroangle.h"
 #include "aeroflight.h"
+
+#include "pulse_in.h"
 
 I2C_M_SETUP_Type* accelerometer;
 I2C_M_SETUP_Type* gyro;
@@ -66,23 +69,32 @@ MOTORS_TYPE* motors;
 int twosComplement(uint8_t low_byte, uint8_t high_byte);
 void writeReg(I2C_M_SETUP_Type* device,uint8_t reg, uint32_t value);
 uint8_t* read6Reg(I2C_M_SETUP_Type* device,uint8_t reg, uint8_t* rx_data6);
+
+int stopAllMotors(uint8_t * args);
+
 int aeroInit(uint8_t * args);
 void aeroLoop(uint8_t * args);
 void aeroLoopOff(void);
 int _aeroLoopOff(uint8_t * args);
 int _aeroLoopOn(uint8_t * args);
+
 int _getMotorCommands(uint8_t* args);
 int _getFlightAngles(uint8_t* args);
 int _getGyroReadings(uint8_t * args);
 int _getAccelReadings(uint8_t * args);
+int _getAltitudeReadings(uint8_t * args);
+
 int _maintainConnection(uint8_t * args);
-int stopAllMotors(uint8_t * args);
+
 int _setLevelPitchPID (uint8_t * args);
 int _setLevelRollPID (uint8_t * args);
 int _setLevelGyroPitchPID (uint8_t * args);
 int _setLevelGyroRollPID (uint8_t * args);
-int _armMotors(uint8_t * args);
+int _setAltitudePID (uint8_t * args);
+
 int _setAngleLimit(uint8_t * args);
+
+int _toggleAltitudeControl (uint8_t * args);
 
 #endif
 
