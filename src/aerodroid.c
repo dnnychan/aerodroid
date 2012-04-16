@@ -38,10 +38,26 @@
 #include "cr_dsplib.h"
 #include "aerodroid.h"
 
+#define LOW_PASS_SIZE 10
+
 int aeroLoop_on = FALSE;
 float angle_limit = .175;   // 10 degrees
 uint32_t altitude_data;
 int altitude_control;
+
+float ax = 0;
+float ay = 0;
+float az = -ACCEL_ONEG;
+
+float low_pass_u = 0.1;
+
+float ax_data[LOW_PASS_SIZE];
+float ay_data[LOW_PASS_SIZE];
+float az_data[LOW_PASS_SIZE];
+
+int ax_pos=0;
+int ay_pos=0;
+int az_pos=0;
 
 void aeroPIDValuesInit(PID_TYPE* PID[10])
 {
@@ -284,6 +300,13 @@ int aeroInit(uint8_t * args)
 
   writeReg(accelerometer,accel_ctrl_reg1,0x2F);
   writeReg(accelerometer,accel_ctrl_reg4, 0x30); // +/- 8g
+  
+  for (i=0; i<LOW_PASS_SIZE; i++)
+  {
+    ax_data[i] = 0;
+    ay_data[i] = 0;
+    az_data[i] = ACCEL_ONEG;
+  }
 
   gyro->sl_addr7bit=0x68;
   gyro->tx_data=gyro_tx_data;
@@ -436,6 +459,30 @@ int _setAngleLimit(uint8_t * args)
   return 0;
 }
 
+int _setLowPassU(uint8_t * args)
+{
+  uint8_t * arg_ptr;
+	
+  if ((arg_ptr = (uint8_t *) strtok(NULL, " ")) == NULL) return 1;
+	low_pass_u = (float) strtoul((char *) arg_ptr, NULL, 16)/1000.0;
+  
+  return 0;
+}
+
+float lowPass(float *data, int size, float new_data, int* pos)
+{
+  float sum = 0;
+  int c = 0;
+  
+  data[*pos] = new_data;
+  *pos = ((*pos) + 1 )% size;
+  
+  for (c = 0; c < size; c++)
+    sum +=data[c];
+  
+  return sum/size;
+}
+
 void aeroLoop(uint8_t * args)
 {  
   accel_raw=read6Reg(accelerometer, ACCEL_X_LOW, accel_raw);
@@ -446,13 +493,23 @@ void aeroLoop(uint8_t * args)
   accel_data.y=twosComplement(accel_raw[2], accel_raw[3])/417.95; // /1671.8;
   accel_data.z=twosComplement(accel_raw[4], accel_raw[5])/417.95; // /1671.8;
 
+  //low pass the accelerometer readings
+  /*ax = ((1.0-low_pass_u)*accel_data.x) + (low_pass_u*ax);
+  ay = ((1.0-low_pass_u)*accel_data.y) + (low_pass_u*ay);
+  az = ((1.0-low_pass_u)*accel_data.z) + (low_pass_u*az);*/
+  
+  ax = lowPass(&ax_data, LOW_PASS_SIZE, accel_data.x, &ax_pos);
+  ay = lowPass(&ay_data, LOW_PASS_SIZE, accel_data.y, &ay_pos);
+  az = lowPass(&az_data, LOW_PASS_SIZE, accel_data.z, &az_pos);
+
   gyro_data.x=(twosComplement(gyro_raw[0], gyro_raw[1])+36)/3754.956;  //radians //131.072; //degrees
   gyro_data.y=(twosComplement(gyro_raw[2], gyro_raw[3])-3)/3754.956;  //radians //131.072; //degrees
   gyro_data.z=(twosComplement(gyro_raw[4], gyro_raw[5])+85)/3754.956;  //radians //131.072; //degrees
 
   //flightAngleCalculate(flight_angle, gyro_data.x, gyro_data.y, gyro_data.z, accel_data.x, accel_data.y, accel_data.z, ACCEL_ONEG, 1, 0);
   flightAngleCalculate(flight_angle, gyro_data.y, -gyro_data.x, gyro_data.z, accel_data.x, accel_data.y, accel_data.z, ACCEL_ONEG, 1, 0);
-  
+  flightAngleCalculate(flight_angle, gyro_data.y, -gyro_data.x, gyro_data.z, ax, ay, az, ACCEL_ONEG, 1, 1);
+    
   if (altitude_control)
     altitude_data = pulseIn(0, (1 << 5), 0, (1 << 4), 9850)/58;
   

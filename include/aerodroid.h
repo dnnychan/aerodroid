@@ -96,5 +96,7 @@ int _setAngleLimit(uint8_t * args);
 
 int _toggleAltitudeControl (uint8_t * args);
 
+int _setLowPassU(uint8_t * args);
+
 #endif
 

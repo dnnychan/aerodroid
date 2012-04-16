@@ -1306,6 +1306,8 @@ const _nxp_function driver_table[] = {
     {(uint8_t *) "setTargetAltitude", _setTargetAltitude},
     {(uint8_t *) "getAltitudeReadings", _getAltitudeReadings},
     {(uint8_t *) "changeMew", _changeMew},
+    {(uint8_t *) "setLowPassU", _setLowPassU},
+    {(uint8_t *) "getBalanceAngles", _getBalanceAngles},
     
 };
 

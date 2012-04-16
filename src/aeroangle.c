@@ -45,6 +45,7 @@ float yaw_angle = 0;
 float roll_acc, pitch_acc;
 
 float mew=0.03;
+float accel_magnitude;
 
 int _changeMew (uint8_t * args)
 {
@@ -197,13 +198,13 @@ void driftCorrection(FLIGHT_ANGLE_TYPE* flight_angle, float ax, float ay, float 
                          accel_vector[ZAXIS] * accel_vector[ZAXIS])) / oneG;
 
   // Weight for accelerometer info (<0.5G = 0.0, 1G = 1.0 , >1.5G = 0.0)
-  //accel_weight = constrain(1 - 2 * abs(1 - accel_magnitude), 0, 1);
-  /*accel_weight = 1 - 2 * abs(1 - accel_magnitude);
+  // If it's more or less than 1G, it's moving, so weigh accel data less
+  accel_weight = 1 - 2 * abs(1 - accel_magnitude);
   if (accel_weight > 1.0)
     accel_weight = 1.0;
   else if (accel_weight < 0.0)
-    accel_weight = 0.0;*/
-  accel_weight=1;
+    accel_weight = 0.0;
+  //accel_weight=1;
 
   vectorCrossProduct(&error_roll_pitch, &accel_vector, &flight_angle->dcm_matrix[6]);
   matrixScale(1, 3, &flight_angle->omegaP, &error_roll_pitch, flight_angle->kp_roll_pitch * accel_weight);
@@ -237,26 +238,56 @@ void earthAxisAccels(FLIGHT_ANGLE_TYPE* flight_angle, float ax, float ay, float 
   
 }
 
+int _getBalanceAngles(uint8_t * args)
+{
+  sprintf((char *) str, "%x %x %x\r\n",(int)(roll_angle*180/3.14159), (int)(pitch_angle*180/3.14159), (int)(yaw_angle*180/3.14159));
+  writeUSBOutString(str);
+  
+  return 0;
+}
+
 void flightAngleCalculate(FLIGHT_ANGLE_TYPE* flight_angle,
          float rollRate,            float pitchRate,      float yawRate,  \
          float longitudinalAccel,   float lateralAccel,   float verticalAccel, \
          float oneG,                float magX,           float magY)
 {
-  //~ matrixUpdate(flight_angle, rollRate, pitchRate, yawRate);
-  //~ normalize(flight_angle);
-  //~ driftCorrection(flight_angle, longitudinalAccel, lateralAccel, verticalAccel, oneG, magX, magY);
-  //~ eulerAngles(flight_angle);
-  //earthAxisAccels(flight_angle, longitudinalAccel, lateralAccel, verticalAccel, oneG);
+  if (magY == 0)
+  {
+    matrixUpdate(flight_angle, rollRate, pitchRate, yawRate);
+    normalize(flight_angle);
+    driftCorrection(flight_angle, longitudinalAccel, lateralAccel, verticalAccel, oneG, magX, magY);
+    eulerAngles(flight_angle);
+    //earthAxisAccels(flight_angle, longitudinalAccel, lateralAccel, verticalAccel, oneG);
+  }
+  else
+  {
+    // BALANCE FILTER:
+    
+    /*if (lateralAccel > ACCEL_ONEG)
+      lateralAccel = ACCEL_ONEG;
+    else if (lateralAccel < -ACCEL_ONEG)
+      lateralAccel = -ACCEL_ONEG;
+      
+    if (longitudinalAccel > ACCEL_ONEG)
+      longitudinalAccel = ACCEL_ONEG;
+    else if (longitudinalAccel < -ACCEL_ONEG)
+      longitudinalAccel = -ACCEL_ONEG;
+    */
+    
+    accel_magnitude = sqrt(lateralAccel*lateralAccel + longitudinalAccel*longitudinalAccel + verticalAccel*verticalAccel);
+    roll_acc = -asin(lateralAccel/accel_magnitude);
+    pitch_acc = asin(longitudinalAccel/accel_magnitude);
+    
+    // small angle approx
+    //roll_acc = -lateralAccel/ACCEL_ONEG;
+    //pitch_acc = longitudinalAccel/ACCEL_ONEG;
+    
+    roll_angle = (1.0 - mew) * (roll_angle + rollRate * DT) + mew * roll_acc;
+    pitch_angle = (1.0 - mew) * (pitch_angle + pitchRate * DT) + mew * pitch_acc;
+    yaw_angle = yaw_angle + yawRate * DT;
+  }
   
-  // BALANCE FILTER:
-  roll_acc = -asin(lateralAccel/ACCEL_ONEG);
-  pitch_acc = asin(longitudinalAccel/ACCEL_ONEG);
-  
-  roll_angle = (1.0 - mew) * (roll_angle + rollRate * DT) + mew * roll_acc;
-  pitch_angle = (1.0 - mew) * (pitch_angle + pitchRate * DT) + mew * pitch_acc;
-  yaw_angle = yaw_angle + yawRate * DT;
-  
-  flight_angle->angle[ROLL] = roll_angle;
-  flight_angle->angle[PITCH] = pitch_angle;
-  flight_angle->angle[YAW] = yaw_angle;
+  //flight_angle->angle[ROLL] = roll_angle;
+  //flight_angle->angle[PITCH] = pitch_angle;
+  //flight_angle->angle[YAW] = yaw_angle;
 }
