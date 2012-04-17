@@ -251,7 +251,7 @@ void flightAngleCalculate(FLIGHT_ANGLE_TYPE* flight_angle,
          float longitudinalAccel,   float lateralAccel,   float verticalAccel, \
          float oneG,                float magX,           float magY)
 {
-  if (magY == 0)
+ /* if (magY == 0)
   {
     matrixUpdate(flight_angle, rollRate, pitchRate, yawRate);
     normalize(flight_angle);
@@ -260,34 +260,34 @@ void flightAngleCalculate(FLIGHT_ANGLE_TYPE* flight_angle,
     //earthAxisAccels(flight_angle, longitudinalAccel, lateralAccel, verticalAccel, oneG);
   }
   else
-  {
-    // BALANCE FILTER:
-    
-    /*if (lateralAccel > ACCEL_ONEG)
-      lateralAccel = ACCEL_ONEG;
-    else if (lateralAccel < -ACCEL_ONEG)
-      lateralAccel = -ACCEL_ONEG;
-      
-    if (longitudinalAccel > ACCEL_ONEG)
-      longitudinalAccel = ACCEL_ONEG;
-    else if (longitudinalAccel < -ACCEL_ONEG)
-      longitudinalAccel = -ACCEL_ONEG;
-    */
-    
-    accel_magnitude = sqrt(lateralAccel*lateralAccel + longitudinalAccel*longitudinalAccel + verticalAccel*verticalAccel);
-    roll_acc = -asin(lateralAccel/accel_magnitude);
-    pitch_acc = asin(longitudinalAccel/accel_magnitude);
-    
-    // small angle approx
-    //roll_acc = -lateralAccel/ACCEL_ONEG;
-    //pitch_acc = longitudinalAccel/ACCEL_ONEG;
-    
-    roll_angle = (1.0 - mew) * (roll_angle + rollRate * DT) + mew * roll_acc;
-    pitch_angle = (1.0 - mew) * (pitch_angle + pitchRate * DT) + mew * pitch_acc;
-    yaw_angle = yaw_angle + yawRate * DT;
-  }
+  {*/
+  // BALANCE FILTER:
   
-  //flight_angle->angle[ROLL] = roll_angle;
-  //flight_angle->angle[PITCH] = pitch_angle;
-  //flight_angle->angle[YAW] = yaw_angle;
+  /*if (lateralAccel > ACCEL_ONEG)
+    lateralAccel = ACCEL_ONEG;
+  else if (lateralAccel < -ACCEL_ONEG)
+    lateralAccel = -ACCEL_ONEG;
+    
+  if (longitudinalAccel > ACCEL_ONEG)
+    longitudinalAccel = ACCEL_ONEG;
+  else if (longitudinalAccel < -ACCEL_ONEG)
+    longitudinalAccel = -ACCEL_ONEG;
+  */
+  
+  accel_magnitude = sqrt(lateralAccel*lateralAccel + longitudinalAccel*longitudinalAccel + verticalAccel*verticalAccel);
+  roll_acc = -asin(lateralAccel/accel_magnitude);
+  pitch_acc = asin(longitudinalAccel/accel_magnitude);
+  
+  // small angle approx
+  //roll_acc = -lateralAccel/ACCEL_ONEG;
+  //pitch_acc = longitudinalAccel/ACCEL_ONEG;
+  
+  roll_angle = (1.0 - mew) * (roll_angle + rollRate * DT) + mew * roll_acc;
+  pitch_angle = (1.0 - mew) * (pitch_angle + pitchRate * DT) + mew * pitch_acc;
+  yaw_angle = yaw_angle + yawRate * DT;
+ // }
+  
+  flight_angle->angle[ROLL] = roll_angle;
+  flight_angle->angle[PITCH] = pitch_angle;
+  flight_angle->angle[YAW] = yaw_angle;
 }

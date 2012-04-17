@@ -507,8 +507,8 @@ void aeroLoop(uint8_t * args)
   gyro_data.z=(twosComplement(gyro_raw[4], gyro_raw[5])+85)/3754.956;  //radians //131.072; //degrees
 
   //flightAngleCalculate(flight_angle, gyro_data.x, gyro_data.y, gyro_data.z, accel_data.x, accel_data.y, accel_data.z, ACCEL_ONEG, 1, 0);
-  flightAngleCalculate(flight_angle, gyro_data.y, -gyro_data.x, gyro_data.z, accel_data.x, accel_data.y, accel_data.z, ACCEL_ONEG, 1, 0);
-  flightAngleCalculate(flight_angle, gyro_data.y, -gyro_data.x, gyro_data.z, ax, ay, az, ACCEL_ONEG, 1, 1);
+ // flightAngleCalculate(flight_angle, gyro_data.y, -gyro_data.x, gyro_data.z, accel_data.x, accel_data.y, accel_data.z, ACCEL_ONEG, 1, 0);
+  flightAngleCalculate(flight_angle, gyro_data.y, -gyro_data.x, gyro_data.z, ax, ay, az, ACCEL_ONEG, 1, 0);
     
   if (altitude_control)
     altitude_data = pulseIn(0, (1 << 5), 0, (1 << 4), 9850)/58;
