@@ -78,6 +78,7 @@ void aeroLoopOff(void);
 int _aeroLoopOff(uint8_t * args);
 int _aeroLoopOn(uint8_t * args);
 
+// Read commands
 int _getMotorCommands(uint8_t* args);
 int _getFlightAngles(uint8_t* args);
 int _getGyroReadings(uint8_t * args);
@@ -86,6 +87,7 @@ int _getAltitudeReadings(uint8_t * args);
 
 int _maintainConnection(uint8_t * args);
 
+// Commands to set constants
 int _setLevelPitchPID (uint8_t * args);
 int _setLevelRollPID (uint8_t * args);
 int _setLevelGyroPitchPID (uint8_t * args);

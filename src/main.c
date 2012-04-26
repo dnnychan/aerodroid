@@ -127,6 +127,7 @@ int PWMMatchInit(uint8_t MatchChannel,uint32_t MatchValue)
 }
 
 void PWMInit(void)
+// Initialize PWM for ESCs
 {
     int i=1;
     _roboveroConfig(NULL);

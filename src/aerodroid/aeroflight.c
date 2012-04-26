@@ -57,6 +57,12 @@ int _setTargetAltitude (uint8_t * args)
   return 0;
 }
 
+/**********************************************************************
+ * 
+ * Motors object related functions
+ * 
+ * *******************************************************************/
+
 MOTORS_TYPE* motorsInit(void) {
   MOTORS_TYPE * motors= (MOTORS_TYPE*) malloc(sizeof(MOTORS_TYPE));
   int i;
@@ -102,24 +108,35 @@ void writeMotors(MOTORS_TYPE* motors) {
   PWM_MatchUpdate(LPC_PWM1, LEFT+1,  (uint32_t)getMotorCommand(motors, LEFT),  PWM_MATCH_UPDATE_NEXT_RST);
 }
 
+/***********************************************************************
+ * 
+ * Flight related Functions
+ * 
+ * ********************************************************************/
+// Calculate desired Axis command from angles
 void calculateFlightError(MOTORS_TYPE* motors, FLIGHT_ANGLE_TYPE* flight_angle, PID_TYPE* PID[10], VECTOR gyro_data) {
+  // original code from Arducopter
   //float rollAttitudeCmd = updatePID((receiver.getData(ROLL) - receiver.getZero(ROLL)) * ATTITUDE_SCALING, flightAngle->getData(ROLL), &PID[LEVELROLL]);
   //float pitchAttitudeCmd = updatePID((receiver.getData(PITCH) - receiver.getZero(PITCH)) * ATTITUDE_SCALING, -flightAngle->getData(PITCH), &PID[LEVELPITCH]);
   //motors.setMotorAxisCommand(ROLL, updatePID(rollAttitudeCmd, gyro.getData(ROLL), &PID[LEVELGYROROLL]));
   //motors.setMotorAxisCommand(PITCH, updatePID(pitchAttitudeCmd, -gyro.getData(PITCH), &PID[LEVELGYROPITCH]));
   
+  // Compares angle with desired angle (0) to get desired velocity (??)
   float roll_altitude_cmd  = doPID( 0,  getAngle(flight_angle, ROLL),  PID[LEVELROLL]);
   float pitch_altitude_cmd = doPID( 0, -getAngle(flight_angle, PITCH), PID[LEVELPITCH]);
   
+  // Used for printing
   dummy_roll_altitude_cmd = roll_altitude_cmd;
   dummy_pitch_altitude_cmd = pitch_altitude_cmd;
   dummy_gyro_y = gyro_data.y;
   dummy_gyro_x = -gyro_data.x;
 
+  // Compares gyro readings to desired velocity to get axis commands
   setMotorAxisCommand(motors, ROLL,  doPID( roll_altitude_cmd,  gyro_data.y, PID[LEVELGYROROLL]));
   setMotorAxisCommand(motors, PITCH, doPID(pitch_altitude_cmd, +gyro_data.x, PID[LEVELGYROPITCH]));
 }
 
+// PID loop to lower throttle if altitude is too high
 void processAltitudeControl(uint32_t altitude_data, PID_TYPE* PID[10]) 
 {
   int throttle_adjust = doPID(target_altitude, altitude_data, PID[ALTITUDE]);
@@ -141,25 +158,26 @@ void processFlightControl(MOTORS_TYPE* motors, FLIGHT_ANGLE_TYPE* flight_angle, 
 
   calculateFlightError(motors, flight_angle, PID, gyro_data);
 
-  //do some yaw thing
+  //do some yaw thing (not here)
 
   //altitude
   if (altitude_control)
     processAltitudeControl(altitude_data, PID);
 
-  // Plus mode
+  // Plus mode (pitch and roll axis of quadrotor align with the arms)
   setMotorCommand(motors, FRONT, throttle - getMotorAxisCommand(motors, PITCH) - getMotorAxisCommand(motors, YAW));
   setMotorCommand(motors, RIGHT, throttle - getMotorAxisCommand(motors, ROLL)  + getMotorAxisCommand(motors, YAW));
   setMotorCommand(motors, LEFT,  throttle + getMotorAxisCommand(motors, ROLL)  + getMotorAxisCommand(motors, YAW));
   setMotorCommand(motors, REAR,  throttle + getMotorAxisCommand(motors, PITCH) - getMotorAxisCommand(motors, YAW));
 
-  // X mode
+  // X mode (axis and roll axis go between the arms)
   /*setMotorCommand(motors, FRONT, throttle - getMotorAxisCommand(motors, PITCH) + getMotorAxisCommand(motors, ROLL) - getMotorAxisCommand(motors, YAW));
   setMotorCommand(motors, RIGHT, throttle - getMotorAxisCommand(motors, PITCH) - getMotorAxisCommand(motors, ROLL) + getMotorAxisCommand(motors, YAW));
   setMotorCommand(motors, LEFT,  throttle + getMotorAxisCommand(motors, PITCH) + getMotorAxisCommand(motors, ROLL) + getMotorAxisCommand(motors, YAW));
   setMotorCommand(motors, REAR,  throttle + getMotorAxisCommand(motors, PITCH) - getMotorAxisCommand(motors, ROLL) - getMotorAxisCommand(motors, YAW));
   */
-  //maxmin
+  
+  //Constrain motor commands
   for (motor = FRONT; motor < LASTMOTOR; motor++) {
     if (getMotorCommand(motors, motor) > getMaxCommand(motors,motor))
       setMotorCommand(motors, motor, getMaxCommand(motors,motor));
@@ -167,5 +185,5 @@ void processFlightControl(MOTORS_TYPE* motors, FLIGHT_ANGLE_TYPE* flight_angle, 
       setMotorCommand(motors, motor, getMinCommand(motors,motor));
   }
 
-  //writeMotors(motors);
+  //writeMotors(motors); // done in aeroLoop
 }

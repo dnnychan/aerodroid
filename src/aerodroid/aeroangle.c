@@ -48,6 +48,7 @@ float mew=0.03;
 float accel_magnitude;
 
 int _changeMew (uint8_t * args)
+// Change the mew value for balance filter
 {
   uint8_t * arg_ptr;
 
@@ -57,7 +58,14 @@ int _changeMew (uint8_t * args)
   return 0;
 }
 
+float getAngle(FLIGHT_ANGLE_TYPE* flight_angle, uint8_t axis)
+{
+  return flight_angle->angle[axis];//*180/3.14159;
+}
+
 FLIGHT_ANGLE_TYPE* flightAngleInitialize(float hdgX, float hdgY)
+// Initialize DCM matrix. Details on how this algorithm works can be found
+// in DCMDraft2. (try Googling it, or looking on the Arducopter related sites
 {
   int axis, i;
   FLIGHT_ANGLE_TYPE* flight_angle = (FLIGHT_ANGLE_TYPE*) malloc(sizeof(FLIGHT_ANGLE_TYPE));
@@ -107,12 +115,8 @@ FLIGHT_ANGLE_TYPE* flightAngleInitialize(float hdgX, float hdgY)
   return flight_angle;
 }
 
-float getAngle(FLIGHT_ANGLE_TYPE* flight_angle, uint8_t axis)
-{
-  return flight_angle->angle[axis];//*180/3.14159;
-}
-
 void matrixUpdate (FLIGHT_ANGLE_TYPE* flight_angle, float rollRate, float pitchRate, float yawRate)
+// Use gyro readings to update DCM matrix
 {
   float rate_gyro_vector[3];
   float update_matrix[9], product_matrix[9];
@@ -140,6 +144,7 @@ void matrixUpdate (FLIGHT_ANGLE_TYPE* flight_angle, float rollRate, float pitchR
 }
 
 void normalize (FLIGHT_ANGLE_TYPE* flight_angle)
+// normalize DCM matrix
 {
   //can be further optimized
   float X[3], Y[3], X_orth[3], Y_orth[3], Z_orth[3], temp[3], temp_dcm[9];
@@ -182,7 +187,8 @@ void normalize (FLIGHT_ANGLE_TYPE* flight_angle)
 
 void driftCorrection(FLIGHT_ANGLE_TYPE* flight_angle, float ax, float ay, float az, float oneG, float magX, float magY)
 {
-    //  Compensation of the Roll, Pitch and Yaw drift.
+//  Compensation of the Roll, Pitch and Yaw drift using accelerometer and
+// Compass. Compass not implemented
   float accel_magnitude;
   float accel_vector[3];
   float accel_weight;
@@ -218,6 +224,7 @@ void driftCorrection(FLIGHT_ANGLE_TYPE* flight_angle, float ax, float ay, float 
 
 void eulerAngles(FLIGHT_ANGLE_TYPE* flight_angle)
 {
+  // Calculate the euler angles - ie the angle from the ground
   flight_angle->angle[ROLL]  =  atan2(flight_angle->dcm_matrix[7], flight_angle->dcm_matrix[8]);
   flight_angle->angle[PITCH] =  -asin(flight_angle->dcm_matrix[6]);
   flight_angle->angle[YAW]   =  atan2(flight_angle->dcm_matrix[3], flight_angle->dcm_matrix[0]);
@@ -240,17 +247,25 @@ void earthAxisAccels(FLIGHT_ANGLE_TYPE* flight_angle, float ax, float ay, float 
 
 int _getBalanceAngles(uint8_t * args)
 {
+  // print the angles from the balance filter
   sprintf((char *) str, "%x %x %x\r\n",(int)(roll_angle*180/3.14159), (int)(pitch_angle*180/3.14159), (int)(yaw_angle*180/3.14159));
   writeUSBOutString(str);
   
   return 0;
 }
 
+/**********************************************************************
+ * Calculate Flight Angles. Two algorithms are present: DCM Matrix and
+ * Balance filter
+ * 
+ * param: accel readings (will be normalized), gyro readings (radians)
+ * ********************************************************************/
 void flightAngleCalculate(FLIGHT_ANGLE_TYPE* flight_angle,
          float rollRate,            float pitchRate,      float yawRate,  \
          float longitudinalAccel,   float lateralAccel,   float verticalAccel, \
          float oneG,                float magX,           float magY)
 {
+  //Calculate angles using DCM Matrix. If statement here can be removed.
  /* if (magY == 0)
   {
     matrixUpdate(flight_angle, rollRate, pitchRate, yawRate);
@@ -261,8 +276,10 @@ void flightAngleCalculate(FLIGHT_ANGLE_TYPE* flight_angle,
   }
   else
   {*/
+  
   // BALANCE FILTER:
   
+  // Constrain
   /*if (lateralAccel > ACCEL_ONEG)
     lateralAccel = ACCEL_ONEG;
   else if (lateralAccel < -ACCEL_ONEG)
@@ -274,6 +291,7 @@ void flightAngleCalculate(FLIGHT_ANGLE_TYPE* flight_angle,
     longitudinalAccel = -ACCEL_ONEG;
   */
   
+  // Normalize according the magnitude
   accel_magnitude = sqrt(lateralAccel*lateralAccel + longitudinalAccel*longitudinalAccel + verticalAccel*verticalAccel);
   roll_acc = -asin(lateralAccel/accel_magnitude);
   pitch_acc = asin(longitudinalAccel/accel_magnitude);
@@ -287,6 +305,8 @@ void flightAngleCalculate(FLIGHT_ANGLE_TYPE* flight_angle,
   yaw_angle = yaw_angle + yawRate * DT;
  // }
   
+  // Copy angles to flight_angle. flight_angle->angle will be used to
+  // calculate motor commands
   flight_angle->angle[ROLL] = roll_angle;
   flight_angle->angle[PITCH] = pitch_angle;
   flight_angle->angle[YAW] = yaw_angle;

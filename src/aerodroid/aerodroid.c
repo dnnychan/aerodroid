@@ -3,7 +3,7 @@
  * @purpose
  * @version        0.1
  *------------------------------------------------------------------------------
- * Copyright (C) 2011 Gumstix Inc.
+ * Copyright (C) 2012 Gumstix Inc.
  * All rights reserved.
  *
  * Contributer(s):
@@ -59,72 +59,11 @@ int ax_pos=0;
 int ay_pos=0;
 int az_pos=0;
 
-void aeroPIDValuesInit(PID_TYPE* PID[10])
-{
-  // from 3DRquad.param
-  PID[ROLL]->Kp = 100.00;
-  PID[ROLL]->Ki = 00;
-  PID[ROLL]->Kd = -300.00;
-  PID[ROLL]->IntegratedError = 0;
-  PID[ROLL]->LastError = 0;
-  PID[ROLL]->IMax = 1000;
-  
-  PID[PITCH]->Kp = 100.00;
-  PID[PITCH]->Ki = 00;
-  PID[PITCH]->Kd = -300.00;
-  PID[PITCH]->IntegratedError = 0;
-  PID[PITCH]->LastError = 0;
-  PID[PITCH]->IMax = 1000;
-  
-  PID[YAW]->Kp = 200.00;
-  PID[YAW]->Ki = 5.00;
-  PID[YAW]->Kd = 00;
-  PID[YAW]->IntegratedError = 0;
-  PID[YAW]->LastError = 0;
-  PID[YAW]->IMax = 1000;
-  
-  PID[LEVELROLL]->Kp = 3.5;
-  PID[LEVELROLL]->Ki = 0;
-  PID[LEVELROLL]->Kd = 00;
-  PID[LEVELROLL]->IntegratedError = 0;
-  PID[LEVELROLL]->LastError = 0;
-  PID[LEVELROLL]->IMax = 4000;
-  
-  PID[LEVELPITCH]->Kp = 3.5;
-  PID[LEVELPITCH]->Ki = 0;
-  PID[LEVELPITCH]->Kd = 00;
-  PID[LEVELPITCH]->IntegratedError = 0;
-  PID[LEVELPITCH]->LastError = 0;
-  PID[LEVELPITCH]->IMax = 4000;
-  
-  PID[HEADING]->Kp = 3.00;
-  PID[HEADING]->Ki = 0.10;
-  PID[HEADING]->Kd = 00;
-  PID[HEADING]->IntegratedError = 0;
-  PID[HEADING]->LastError = 0;
-  PID[HEADING]->IMax = 1000;
-  
-  PID[LEVELGYROROLL]->Kp = .149;
-  PID[LEVELGYROROLL]->Ki = 0.039;
-  PID[LEVELGYROROLL]->Kd = -.01;
-  PID[LEVELGYROROLL]->IntegratedError = 0;
-  PID[LEVELGYROROLL]->LastError = 0;
-  PID[LEVELGYROROLL]->IMax = 250;
-  
-  PID[LEVELGYROPITCH]->Kp = .149;
-  PID[LEVELGYROPITCH]->Ki = 0.039;
-  PID[LEVELGYROPITCH]->Kd = -.01;
-  PID[LEVELGYROPITCH]->IntegratedError = 0;
-  PID[LEVELGYROPITCH]->LastError = 0;
-  PID[LEVELGYROPITCH]->IMax = 250;
-  
-  PID[ALTITUDE]->Kp = .4;
-  PID[ALTITUDE]->Ki = 0.02;
-  PID[ALTITUDE]->Kd = 0;
-  PID[ALTITUDE]->IntegratedError = 0;
-  PID[ALTITUDE]->LastError = 0;
-  PID[ALTITUDE]->IMax = 250;
-}
+/**********************************************************************
+ * 
+ *                      Settings Functions
+ * 
+ * *******************************************************************/
 
 int _setLevelRollPID (uint8_t * args)
 {
@@ -247,6 +186,81 @@ int _toggleAltitudeControl (uint8_t * args)
   return 0;
 }
 
+int _setAngleLimit(uint8_t * args)
+{
+  uint8_t * arg_ptr;
+  int temp;
+	
+  if ((arg_ptr = (uint8_t *) strtok(NULL, " ")) == NULL) return 1;
+	temp = (int) strtoul((char *) arg_ptr, NULL, 16);
+  
+  angle_limit = temp * 3.14159 / 180.0;
+  
+  return 0;
+}
+
+int _setLowPassU(uint8_t * args)
+{
+  uint8_t * arg_ptr;
+	
+  if ((arg_ptr = (uint8_t *) strtok(NULL, " ")) == NULL) return 1;
+	low_pass_u = (float) strtoul((char *) arg_ptr, NULL, 16)/1000.0;
+  
+  return 0;
+}
+
+/**********************************************************************
+ * 
+ *                        Printing Functions
+ * 
+ * *******************************************************************/
+ 
+ int _getMotorCommands(uint8_t * args)
+{
+  sprintf((char *) str, "%x %x %x %x\r\n",(int)(getMotorCommand(motors,FRONT)), (int)(getMotorCommand(motors,RIGHT)), (int)(getMotorCommand(motors,REAR)), (int)(getMotorCommand(motors,LEFT)));
+  writeUSBOutString(str);
+  
+  return 0;
+}
+
+int _getFlightAngles(uint8_t * args)
+{
+  sprintf((char *) str, "%x %x %x\r\n",(int)(flight_angle->angle[ROLL]*180/3.14159), (int)(flight_angle->angle[PITCH]*180/3.14159), (int)(flight_angle->angle[YAW]*180/3.14159));
+  writeUSBOutString(str);
+  
+  return 0;
+}
+
+int _getGyroReadings(uint8_t * args)
+{
+  sprintf((char *) str, "%x %x %x\r\n",(int)(gyro_data.y*180/3.14159), (int)(gyro_data.x*180/3.14159), (int)(gyro_data.z*180/3.14159));
+  writeUSBOutString(str);
+  
+  return 0;
+}
+
+int _getAccelReadings(uint8_t * args)
+{
+  sprintf((char *) str, "%x %x %x\r\n",(int)(accel_data.x*100), (int)(accel_data.y*100), (int)(accel_data.z*100));
+  writeUSBOutString(str);
+  
+  return 0;
+}
+
+int _getAltitudeReadings(uint8_t * args)
+{
+  sprintf((char *) str, "%x \r\n",(int) altitude_data);
+  writeUSBOutString(str);
+  
+  return 0;
+}
+ 
+/**********************************************************************
+ * 
+ *                        I2C Functions
+ * 
+ * *******************************************************************/
+ 
 int twosComplement(uint8_t low_byte, uint8_t high_byte)
 {
   return ((int)((low_byte + (high_byte << 8)) + pow(2,15)) % (int)pow(2,16) - pow(2,15));
@@ -272,6 +286,12 @@ uint8_t* read6Reg(I2C_M_SETUP_Type* device,uint8_t reg, uint8_t* rx_data6)
   return rx_data6;
 }
 
+/**********************************************************************
+ * 
+ *                      Initialization Routine
+ * 
+ * *******************************************************************/
+ 
 int aeroInit(uint8_t * args)
 {
   int i;
@@ -288,6 +308,7 @@ int aeroInit(uint8_t * args)
   //uint8_t gyro_ctrl_reg5 = 0x24;
   //uint8_t gyro_status_reg = 0x27;
   
+  // initialize acclerometer and gyro
   accelerometer = (I2C_M_SETUP_Type*) malloc(sizeof(I2C_M_SETUP_Type));
   gyro = (I2C_M_SETUP_Type*) malloc(sizeof(I2C_M_SETUP_Type));
 
@@ -319,21 +340,99 @@ int aeroInit(uint8_t * args)
   accel_raw = (uint8_t*) malloc(6*sizeof(uint8_t));
   gyro_raw  = (uint8_t*) malloc(6*sizeof(uint8_t));
   
+  // Initialize PID values
   for (i=0; i<10; i++)
     PID[i] = (PID_TYPE*) malloc(sizeof(PID_TYPE));
 
   aeroPIDValuesInit(PID);
   
+  // Set GPIO for rangefinder
   GPIO_SetDir(0, (1 << 4), 1);
   GPIO_SetDir(0, (1 << 5), 0);
   
+  // Initialize flight_angle
   flight_angle = flightAngleInitialize(1.0, 0.0);
+  
+  // Initialize motors. Sets values to default
   motors = motorsInit();
   writeMotors(motors);
 
   return 0;
 }
 
+void aeroPIDValuesInit(PID_TYPE* PID[10])
+{
+  // from 3DRquad.param
+  PID[ROLL]->Kp = 100.00;
+  PID[ROLL]->Ki = 00;
+  PID[ROLL]->Kd = -300.00;
+  PID[ROLL]->IntegratedError = 0;
+  PID[ROLL]->LastError = 0;
+  PID[ROLL]->IMax = 1000;
+  
+  PID[PITCH]->Kp = 100.00;
+  PID[PITCH]->Ki = 00;
+  PID[PITCH]->Kd = -300.00;
+  PID[PITCH]->IntegratedError = 0;
+  PID[PITCH]->LastError = 0;
+  PID[PITCH]->IMax = 1000;
+  
+  PID[YAW]->Kp = 200.00;
+  PID[YAW]->Ki = 5.00;
+  PID[YAW]->Kd = 00;
+  PID[YAW]->IntegratedError = 0;
+  PID[YAW]->LastError = 0;
+  PID[YAW]->IMax = 1000;
+  
+  PID[LEVELROLL]->Kp = 3.5;
+  PID[LEVELROLL]->Ki = 0;
+  PID[LEVELROLL]->Kd = 00;
+  PID[LEVELROLL]->IntegratedError = 0;
+  PID[LEVELROLL]->LastError = 0;
+  PID[LEVELROLL]->IMax = 4000;
+  
+  PID[LEVELPITCH]->Kp = 3.5;
+  PID[LEVELPITCH]->Ki = 0;
+  PID[LEVELPITCH]->Kd = 00;
+  PID[LEVELPITCH]->IntegratedError = 0;
+  PID[LEVELPITCH]->LastError = 0;
+  PID[LEVELPITCH]->IMax = 4000;
+  
+  PID[HEADING]->Kp = 3.00;
+  PID[HEADING]->Ki = 0.10;
+  PID[HEADING]->Kd = 00;
+  PID[HEADING]->IntegratedError = 0;
+  PID[HEADING]->LastError = 0;
+  PID[HEADING]->IMax = 1000;
+  
+  PID[LEVELGYROROLL]->Kp = .149;
+  PID[LEVELGYROROLL]->Ki = 0.039;
+  PID[LEVELGYROROLL]->Kd = -.01;
+  PID[LEVELGYROROLL]->IntegratedError = 0;
+  PID[LEVELGYROROLL]->LastError = 0;
+  PID[LEVELGYROROLL]->IMax = 250;
+  
+  PID[LEVELGYROPITCH]->Kp = .149;
+  PID[LEVELGYROPITCH]->Ki = 0.039;
+  PID[LEVELGYROPITCH]->Kd = -.01;
+  PID[LEVELGYROPITCH]->IntegratedError = 0;
+  PID[LEVELGYROPITCH]->LastError = 0;
+  PID[LEVELGYROPITCH]->IMax = 250;
+  
+  PID[ALTITUDE]->Kp = .4;
+  PID[ALTITUDE]->Ki = 0.02;
+  PID[ALTITUDE]->Kd = 0;
+  PID[ALTITUDE]->IntegratedError = 0;
+  PID[ALTITUDE]->LastError = 0;
+  PID[ALTITUDE]->IMax = 250;
+}
+
+/**********************************************************************
+ * 
+ *                      Start/Stop Functions
+ * 
+ * *******************************************************************/
+ 
 int stopAllMotors(uint8_t * args)
 {
   setMotorCommand(motors,FRONT,MINCOMMAND);
@@ -348,6 +447,7 @@ int stopAllMotors(uint8_t * args)
 
 void aeroLoopOff(void)
 {
+  // Shuts down motors, turns off interrupt. Frees all variables
   int i;
   
   if (aeroLoop_on == TRUE)
@@ -401,75 +501,21 @@ int _aeroLoopOn(uint8_t * args)
 
 int _maintainConnection(uint8_t * args)
 {
+  //Resets count down to 10. Shuts off at 5
   safety_counter=10;
   
   return 0;
 }
 
-int _getMotorCommands(uint8_t * args)
-{
-  sprintf((char *) str, "%x %x %x %x\r\n",(int)(getMotorCommand(motors,FRONT)), (int)(getMotorCommand(motors,RIGHT)), (int)(getMotorCommand(motors,REAR)), (int)(getMotorCommand(motors,LEFT)));
-  writeUSBOutString(str);
-  
-  return 0;
-}
-
-int _getFlightAngles(uint8_t * args)
-{
-  sprintf((char *) str, "%x %x %x\r\n",(int)(flight_angle->angle[ROLL]*180/3.14159), (int)(flight_angle->angle[PITCH]*180/3.14159), (int)(flight_angle->angle[YAW]*180/3.14159));
-  writeUSBOutString(str);
-  
-  return 0;
-}
-
-int _getGyroReadings(uint8_t * args)
-{
-  sprintf((char *) str, "%x %x %x\r\n",(int)(gyro_data.y*180/3.14159), (int)(gyro_data.x*180/3.14159), (int)(gyro_data.z*180/3.14159));
-  writeUSBOutString(str);
-  
-  return 0;
-}
-
-int _getAccelReadings(uint8_t * args)
-{
-  sprintf((char *) str, "%x %x %x\r\n",(int)(accel_data.x*100), (int)(accel_data.y*100), (int)(accel_data.z*100));
-  writeUSBOutString(str);
-  
-  return 0;
-}
-
-int _getAltitudeReadings(uint8_t * args)
-{
-  sprintf((char *) str, "%x \r\n",(int) altitude_data);
-  writeUSBOutString(str);
-  
-  return 0;
-}
-
-int _setAngleLimit(uint8_t * args)
-{
-  uint8_t * arg_ptr;
-  int temp;
-	
-  if ((arg_ptr = (uint8_t *) strtok(NULL, " ")) == NULL) return 1;
-	temp = (int) strtoul((char *) arg_ptr, NULL, 16);
-  
-  angle_limit = temp * 3.14159 / 180.0;
-  
-  return 0;
-}
-
-int _setLowPassU(uint8_t * args)
-{
-  uint8_t * arg_ptr;
-	
-  if ((arg_ptr = (uint8_t *) strtok(NULL, " ")) == NULL) return 1;
-	low_pass_u = (float) strtoul((char *) arg_ptr, NULL, 16)/1000.0;
-  
-  return 0;
-}
-
+/**********************************************************************
+ * 
+ *                       Filtering Functions
+ * 
+ * *******************************************************************/
+ 
 float lowPass(float *data, int size, float new_data, int* pos)
+// Low pass filter. The average of data (which is size long). New data
+// is added to pos
 {
   float sum = 0;
   int c = 0;
@@ -483,8 +529,16 @@ float lowPass(float *data, int size, float new_data, int* pos)
   return sum/size;
 }
 
+/**********************************************************************
+ * 
+ *                            MAIN LOOP
+ * 
+ * *******************************************************************/
+ 
+ // Called from SysTickHandler every 20ms
 void aeroLoop(uint8_t * args)
 {  
+  // Read sensors and convert appropriately
   accel_raw=read6Reg(accelerometer, ACCEL_X_LOW, accel_raw);
   gyro_raw=read6Reg(gyro, GYRO_X_LOW, gyro_raw);
   
@@ -506,6 +560,9 @@ void aeroLoop(uint8_t * args)
   gyro_data.y=(twosComplement(gyro_raw[2], gyro_raw[3])-3)/3754.956;  //radians //131.072; //degrees
   gyro_data.z=(twosComplement(gyro_raw[4], gyro_raw[5])+85)/3754.956;  //radians //131.072; //degrees
 
+
+  // Calculate the flight angles using sensor readings
+  
   //flightAngleCalculate(flight_angle, gyro_data.x, gyro_data.y, gyro_data.z, accel_data.x, accel_data.y, accel_data.z, ACCEL_ONEG, 1, 0);
  // flightAngleCalculate(flight_angle, gyro_data.y, -gyro_data.x, gyro_data.z, accel_data.x, accel_data.y, accel_data.z, ACCEL_ONEG, 1, 0);
   flightAngleCalculate(flight_angle, gyro_data.y, -gyro_data.x, gyro_data.z, ax, ay, az, ACCEL_ONEG, 1, 0);
@@ -513,13 +570,19 @@ void aeroLoop(uint8_t * args)
   if (altitude_control)
     altitude_data = pulseIn(0, (1 << 5), 0, (1 << 4), 9850)/58;
   
+  // Use flight angles to update motor output
   processFlightControl(motors, flight_angle, PID, gyro_data, altitude_data, altitude_control);
   
+  // Check to make sure angles are within limits (ie not tilted too much)
   if ((flight_angle->angle[ROLL] > angle_limit) || (flight_angle->angle[ROLL] < -angle_limit) || (flight_angle->angle[PITCH] > angle_limit) || (flight_angle->angle[PITCH] < -angle_limit))
   {
+    // Turn everything off
     aeroLoopOff();
+    
+    // Turn on LED to signify error
     GPIO_ClearValue(3, (1 << 25));
   }
   else
+  // If angles are ok, update motors
     writeMotors(motors);
 }

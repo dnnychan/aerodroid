@@ -115,6 +115,9 @@ float vectorDotProduct(int length, float* vector1, float* vector2)
   return dotProduct;
 }
 
+// NOT USED
+
+
 //Converts floating point to Q16.16 format
 int floatToQ (float num)
 {

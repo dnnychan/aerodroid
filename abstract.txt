@@ -1,0 +1,10 @@
+This branch contains code to fly a quadrotor. Much of the code has been taken from the DIY Drones development team for the Arducopter. It is to be used with the robovero python branch of the same name.
+
+The following is a brief overview the code:
+
+aero.h:		constants to be used by other modules
+aerodroid.c: 	contains the main loop (aeroLoop) which operates by getting the sensor readings, using them to calculate the flight angles, determining what to set the motors, and writing to the motors
+aeroangle.c:	contains code to calculate the angle the quadrotor makes with the Earth. Much of the code is for the DCM matrix. Another method to find angles is also used can be found in flightAngleCalculate.
+aeroflight.c:	contains the MOTORS_TYPE class (?) which stores and handles the motors. Also calculates how much to power the motors
+
+To use ESCs, they must first be calibrated. To do so, follow the instructions found on the ESC manuals. This code has them calibrated as 1ms pulse to 2ms pulse. 

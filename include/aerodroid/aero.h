@@ -51,7 +51,7 @@
 #define YAXIS 1
 #define ZAXIS 2
 
-#define FRONT 0
+#define FRONT 0 // actually connected to PWM4. PWM0 has trouble initializing
 #define RIGHT 1
 #define REAR 2
 #define LEFT 3

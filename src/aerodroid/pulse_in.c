@@ -39,6 +39,7 @@
 
 int pulseIn (uint8_t echo_port, uint32_t echo_pin, uint8_t trig_port, uint32_t trig_pin, uint32_t trig_pulse)
 // Sends pulse of length trig_pulse at echo. Reads length of pulse at trig
+// Used for HC-SR04 rangefinder
 {
   uint32_t width = 0;
   uint32_t num_loops = 0;
@@ -78,6 +79,7 @@ int pulseIn (uint8_t echo_port, uint32_t echo_pin, uint8_t trig_port, uint32_t t
 }
 
 int _pulseIn (uint8_t * args)
+// Wrapper function for above function
 {
   uint8_t * arg_ptr;
 	uint8_t echo_port;
