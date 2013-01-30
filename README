@@ -7,6 +7,7 @@ script.ld	Linker script
 src/		C source files
 src/wrap	Wrapper functions for NXP peripheral driver library
 src/usb		USB device configuration
+src/aerodroid	Code relating to Quadcopter
 lib/		Contains libgcc, libc, and prebuilt peripheral driver library
 include/	Header files
 contrib		Additional files that may be useful
